@@ -1,0 +1,29 @@
+services:
+  web:
+    image: nginx:latest
+    container_name: pify-player-web
+    ports:
+      - "8080:80"
+    volumes:
+      - ./player/build:/usr/share/nginx/html
+      - ./nginx/player.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - server
+    networks:
+      - pify-player-network
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: pify-player
+    environment:
+      - PORT=5000
+    ports:
+      - "1337:5000"
+    networks:
+      - pify-player-network
+
+networks:
+  pify-player-network:
+    driver: bridge
