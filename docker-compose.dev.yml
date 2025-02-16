@@ -17,9 +17,16 @@ services:
       context: ./player
       dockerfile: dev.Dockerfile
     container_name: pify-player-frontend
+    ports:
+      - "5173:5173"
+      - "24678:24678"
+    volumes:
+      - ./player:/app
+      # following lines needed to allow container to persist own folder, rather than allowing local to override
+      - /app/.svelte-kit
+      - /app/node_modules
     environment:
       - NODE_ENV=development
-      - PORT=3000
     networks:
       - pify-player-dev-network
 

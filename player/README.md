@@ -13,7 +13,30 @@ npm run dev
 npm run dev -- --open
 ```
 
-## Building
+### Running HMR in Dockerized environment
+
+Ran into minor roadblock to get HMR to work in Dockerized environment, but with some research and sample from https://github.com/woollysammoth/sveltekit-docker-nginx/blob/main/docker-compose.dev.yml HMR works now.
+
+For HMR to work properly:
+
+- Include `--host 0.0.0.0` option when running `npm run dev`.
+- Use volumes to map local files/folders into container app to make sure changes are detected.
+- Make sure node_modules in container are not overridden by local copy or else it will mess with OS-specific builds of libraries (such as rollup).
+- Access Svelte app via `0.0.0.0` instead of `localhost`.
+- Make sure ports are exposed and mapped properly in Dockerfile and docker-compose.yml files.
+- Include following snippet into `server` portion of `vite.config.ts`:
+
+```
+server: {
+    hmr: {
+        clientPort: 5173
+    },
+    host: '0.0.0.0',
+    port: 5173
+}
+```
+
+## Production Build
 
 To create a production version of your app:
 
