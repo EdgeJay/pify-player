@@ -15,6 +15,4 @@ COPY --from=builder /app/build/ /app/build/
 
 ENV PORT=3000
 
-EXPOSE 3000
-
 CMD ["node", "./build"]

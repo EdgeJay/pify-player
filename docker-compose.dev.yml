@@ -5,23 +5,23 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./nginx/player.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/player.dev.conf:/etc/nginx/nginx.conf
     depends_on:
       - api
       - frontend
     networks:
-      - pify-player-network
+      - pify-player-dev-network
 
   frontend:
     build:
       context: ./player
-      dockerfile: Dockerfile
+      dockerfile: dev.Dockerfile
     container_name: pify-player-frontend
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - PORT=3000
     networks:
-      - pify-player-network
+      - pify-player-dev-network
 
   api:
     build:
@@ -31,8 +31,8 @@ services:
     environment:
       - PORT=5000
     networks:
-      - pify-player-network
+      - pify-player-dev-network
 
 networks:
-  pify-player-network:
+  pify-player-dev-network:
     driver: bridge
