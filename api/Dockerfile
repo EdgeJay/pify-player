@@ -11,7 +11,7 @@ COPY . .
 RUN go mod download
 
 # Build the Go application as a statically linked binary
-RUN CGO_ENABLED=0 GOOS=linux go build -o pify-player-server .
+RUN CGO_ENABLED=0 GOOS=linux go build -o pify-player-api .
 
 # Stage 2: Create a lightweight runtime container
 FROM alpine:latest
@@ -23,7 +23,7 @@ ENV PORT=5000
 WORKDIR /app
 
 # Copy the built Go binary from the builder stage
-COPY --from=builder /app/pify-player-server .
+COPY --from=builder /app/pify-player-api .
 
 # Set the timezone and install CA certificates
 RUN apk --no-cache add ca-certificates tzdata
@@ -32,4 +32,4 @@ RUN apk --no-cache add ca-certificates tzdata
 EXPOSE 5000
 
 # Run the Go application
-ENTRYPOINT ["/app/pify-player-server"]
+ENTRYPOINT ["/app/pify-player-api"]
