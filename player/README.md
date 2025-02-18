@@ -15,7 +15,7 @@ npm run dev -- --open
 
 ### Running HMR in Dockerized environment
 
-Ran into minor roadblock to get HMR to work in Dockerized environment, but with some research and sample from https://github.com/woollysammoth/sveltekit-docker-nginx/blob/main/docker-compose.dev.yml HMR works now.
+Ran into minor roadblock to get HMR to work in Dockerized environment, but with some research and sample from https://github.com/woollysammoth/sveltekit-docker-nginx HMR works now.
 
 For HMR to work properly:
 

@@ -35,6 +35,7 @@ export default defineConfig({
 	},
 
 	server: {
+		allowedHosts: ['huijie-mbp.local'],
 		hmr: {
 			clientPort: 5173
 		},
