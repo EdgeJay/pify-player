@@ -1,17 +1,4 @@
 services:
-  nginx:
-    image: nginx:latest
-    container_name: pify-player-nginx
-    ports:
-      - "8080:80"
-    volumes:
-      - ./nginx/player.dev.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - api
-      - frontend
-    networks:
-      - pify-player-dev-network
-
   frontend:
     build:
       context: ./player
@@ -22,9 +9,12 @@ services:
       - "24678:24678"
     volumes:
       - ./player:/app
+      - ./certs:/app/certs
       # following lines needed to allow container to persist own folder, rather than allowing local to override
       - /app/.svelte-kit
       - /app/node_modules
+    depends_on:
+      - api
     environment:
       - NODE_ENV=development
     networks:
@@ -37,6 +27,7 @@ services:
     container_name: pify-player-api
     volumes:
       - ./api:/app
+      - ./certs:/app/certs
     environment:
       - PORT=5000
     networks:

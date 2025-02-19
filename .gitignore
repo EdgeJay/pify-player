@@ -1,5 +1,11 @@
 # macOS stuff
 .DS_Store
 
+# keys, secrets
+certs/
+*/certs/
+*.key
+*.pem
+
 # env file
 .env

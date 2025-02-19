@@ -1,3 +1,9 @@
+include .env
+export
+
+generate-ssl:
+	@chmod +x ./scripts/setup-ssl.sh && ./scripts/setup-ssl.sh -d $(DOMAIN)
+
 start:
 	@docker compose -f docker-compose.yml up --build
 
