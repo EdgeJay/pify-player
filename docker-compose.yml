@@ -1,22 +1,11 @@
 services:
-  nginx:
-    image: nginx:latest
-    container_name: pify-player-nginx
-    ports:
-      - "8080:80"
-    volumes:
-      - ./nginx/player.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - api
-      - frontend
-    networks:
-      - pify-player-network
-
   frontend:
     build:
       context: ./player
       dockerfile: Dockerfile
     container_name: pify-player-frontend
+    volumes:
+      - ./certs:/app/certs
     environment:
       - NODE_ENV=production
       - PORT=3000
@@ -28,6 +17,8 @@ services:
       context: ./api
       dockerfile: Dockerfile
     container_name: pify-player-api
+    volumes:
+      - ./certs:/app/certs
     environment:
       - PORT=5000
     networks:
