@@ -11,7 +11,7 @@ COPY . .
 RUN go mod download
 
 # Build the Go application as a statically linked binary
-RUN CGO_ENABLED=0 GOOS=linux go build -o pify-player-api .
+RUN CGO_ENABLED=0 GOOS=linux go build -o pify-player-api ./cmd/main.go
 
 # Stage 2: Create a lightweight runtime container
 FROM alpine:latest
