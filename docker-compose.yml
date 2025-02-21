@@ -23,6 +23,8 @@ services:
       - ./certs:/app/certs
     environment:
       - PORT=8080
+      - CORS_ORIGINS=huijie-mbp.local
+      - SSL_DOMAIN=huijie-mbp.local
     networks:
       - pify-player-network
 

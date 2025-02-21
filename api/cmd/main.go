@@ -21,6 +21,7 @@ import (
 func main() {
 	port := os.Getenv("PORT")
 	corsOrigins := strings.Split(os.Getenv("CORS_ORIGINS"), ",")
+	sslDomain := os.Getenv("SSL_DOMAIN")
 
 	if _, err := strconv.Atoi(port); err != nil {
 		port = "8080"
@@ -56,7 +57,7 @@ func main() {
 		log.Printf("Server is running on port %s...\n", port)
 
 		// Start the server
-		if err := e.Start(fmt.Sprintf(":%s", port)); err != nil && err != http.ErrServerClosed {
+		if err := e.StartTLS(fmt.Sprintf(":%s", port), fmt.Sprintf("./certs/%s.pem", sslDomain), fmt.Sprintf("./certs/%s.key.pem", sslDomain)); err != nil && err != http.ErrServerClosed {
 			e.Logger.Fatal("Shutting down the server")
 		}
 	}()
