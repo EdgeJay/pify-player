@@ -1,1 +1,63 @@
 @import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #0f0f0f;
+    color: #00ff00;
+    padding: 0;
+    margin: 0;
+    height: 100vh;
+}
+
+.top-menu {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background-color: #1a1a1a;
+    border-bottom: 2px solid #00ff00;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    box-shadow: 0 0 10px #00ff00;
+    z-index: 1000;
+}
+.menu-title {
+    color: #00ff00;
+    font-size: 24px;
+}
+.hamburger-menu button {
+    background-color: #00ff00;
+    border: none;
+    border-radius: 5px;
+    width: 40px;
+    height: 40px;
+    color: #0f0f0f;
+    font-size: 24px;
+    cursor: pointer;
+}
+.side-menu {
+    position: fixed;
+    top: 60px; /* Height of the top menu */
+    right: 0;
+    width: 250px;
+    height: calc(100% - 60px);
+    background-color: #1a1a1a;
+    border-left: 2px solid #00ff00;
+    box-shadow: -5px 0 10px #00ff00;
+    padding: 20px;
+    display: none; /* Initially hidden */
+    z-index: 1000;
+}
+.side-menu ul {
+    list-style: none;
+    padding: 0;
+}
+.side-menu ul li {
+    margin: 20px 0;
+}
+.side-menu ul li a {
+    color: #00ff00;
+    text-decoration: none;
+    font-size: 18px;
+}
