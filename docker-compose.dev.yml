@@ -26,12 +26,15 @@ services:
       dockerfile: dev.Dockerfile
     container_name: pify-player-api
     ports:
-      - "8080:8080"
+      - "8080:443"
     volumes:
       - ./api:/app
       - ./certs:/app/certs
+      - ./api/database:/app/database
+    env_file:
+      - ./api/.env
     environment:
-      - PORT=8080
+      - PORT=443
       - CORS_ORIGINS=huijie-mbp.local
       - SSL_DOMAIN=huijie-mbp.local
     networks:

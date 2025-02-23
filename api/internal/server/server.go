@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 
+	"github.com/edgejay/pify-player/api/internal/database"
 	"github.com/edgejay/pify-player/api/internal/handlers"
 )
 
@@ -24,7 +25,18 @@ func NewServer(port string, corsOrigins []string, sslDomain string) *Server {
 	return &Server{port, corsOrigins, sslDomain, nil}
 }
 
+// Start function initializes and starts the Echo server with the specified configurations.
+//   - Sets up middleware for logging, recovery, and CORS (if specified).
+//   - Sets up the API routes and starts the server with TLS using the provided SSL domain.
+//   - If port is not a valid integer, it defaults to "8080".
+//
+// In case of a server start failure, it logs the error and exits the application.
 func (svr *Server) Start() {
+	// Initialise the database
+	if err := database.GetSQLiteDB().Ping(); err != nil {
+		log.Fatalf("Database connection failed: %v\n", err)
+	}
+
 	if _, err := strconv.Atoi(svr.port); err != nil {
 		svr.port = "8080"
 	}
@@ -46,7 +58,6 @@ func (svr *Server) Start() {
 	}
 
 	// Handlers
-	// Handlers
 	apiGroup := svr.e.Group("/api")
 	authGroup := apiGroup.Group("/auth")
 	handlers.SetAuthRoutes(authGroup)
@@ -63,6 +74,8 @@ func (svr *Server) Start() {
 	}
 }
 
+// Shutdown function gracefully shuts down the server with a timeout of 5 seconds.
+//   - Logs the error if the server is forced to shutdown.
 func (svr *Server) Shutdown(ctx context.Context) {
 	if err := svr.e.Shutdown(ctx); err != nil {
 		log.Fatalf("Server forced to shutdown: %v", err)

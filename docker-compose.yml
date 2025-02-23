@@ -21,6 +21,9 @@ services:
       - "8080:8080"
     volumes:
       - ./certs:/app/certs
+      - ./api/database:/app/database
+    env_file:
+      - ./api/.env.prod
     environment:
       - PORT=8080
       - CORS_ORIGINS=huijie-mbp.local
