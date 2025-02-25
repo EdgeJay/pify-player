@@ -10,7 +10,7 @@ import (
 
 	"github.com/labstack/echo/v4"
 
-	"github.com/edgejay/pify-player/api/utils"
+	"github.com/edgejay/pify-player/api/internal/services"
 )
 
 type loginResponse struct {
@@ -47,39 +47,17 @@ func login(c echo.Context) error {
 		clientId := os.Getenv("SPOTIFY_CLIENT_ID")
 		redirectUri := os.Getenv("SPOTIFY_REDIRECT_URI")
 
-		state := utils.GenerateRandomString(16)
-
-		scope := []string{
-			"user-read-email",
-			"user-read-private",
-			"streaming",
-			"user-read-playback-state",
-			"user-modify-playback-state",
-			"user-read-currently-playing",
-			"playlist-read-private",
-			"playlist-read-collaborative",
-			"user-library-read",
-			"user-read-playback-position",
-			"user-read-recently-played",
-			"user-top-read",
-		}
-
-		authUrl, err := url.Parse("https://accounts.spotify.com/authorize")
+		spotifyService := services.NewSpotifyService(clientId, redirectUri, nil)
+		authUrl, err := spotifyService.GetAuthUrl()
 		if err != nil {
 			return err
 		}
 
-		q := authUrl.Query()
-		q.Set("client_id", clientId)
-		q.Set("response_type", "code")
-		q.Set("redirect_uri", redirectUri)
-		q.Set("state", state)
-		q.Set("scope", strings.Join(scope, " "))
-		authUrl.RawQuery = q.Encode()
-
 		// Redirect to Spotify login page
-		return c.Redirect(http.StatusTemporaryRedirect, authUrl.String())
+		return c.Redirect(http.StatusTemporaryRedirect, authUrl)
 	}
+
+	// TODO: check if session is valid
 
 	return c.JSON(http.StatusOK, loginResponse{LoggedIn: true})
 }
