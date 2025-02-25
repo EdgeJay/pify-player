@@ -26,6 +26,7 @@ type SpotifyTokenResponse struct {
 
 type SpotifyUserResponse struct {
 	Id          string `json:"id"`
+	AccessToken string `json:"access_token"`
 	DisplayName string `json:"display_name"`
 	Images      []struct {
 		Url    string `json:"url"`
@@ -121,6 +122,7 @@ func callback(c echo.Context) error {
 	if err := json.NewDecoder(userRes.Body).Decode(&userResJson); err != nil {
 		return err
 	}
+	userResJson.AccessToken = tokenResJson.AccessToken
 
 	return c.JSON(http.StatusOK, userResJson)
 }
