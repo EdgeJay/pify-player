@@ -23,38 +23,6 @@
 		const { logged_in, redirect_url } = (await response.json()) as LoginResponse;
 		if (!logged_in) {
 			window.location.href = redirect_url;
-			/*
-			// check if query string params are present
-			const params = new URLSearchParams(window.location.search);
-			const spotifyRedirectCode = params.get('code');
-			const spotifyRedirectState = params.get('state');
-			const spotifyRedirectError = params.get('error');
-			if (!spotifyRedirectError && spotifyRedirectCode && spotifyRedirectState) {
-				// redirection from Spotify
-				const response = await fetch('https://huijie-mbp.local:8080/api/auth/callback', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					},
-					body: JSON.stringify({
-						code: spotifyRedirectCode,
-						state: spotifyRedirectState
-					}),
-					credentials: 'include'
-				});
-
-				if (!response.ok) {
-					throw new Error('Login failed');
-				}
-
-				console.log('Logged in');
-
-				return;
-			} else {
-				// redirect to Spotify login
-				window.location.href = redirect_url;
-			}
-			*/
 		} else {
 			console.log('Already logged in');
 		}
