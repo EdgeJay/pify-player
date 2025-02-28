@@ -1,28 +1,67 @@
 package services
 
 import (
+	"encoding/json"
+	"log"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/edgejay/pify-player/api/internal/utils"
 )
 
-type SpotifyService struct {
-	clientId    string
-	redirectUri string
-	httpClient  *http.Client
+type SpotifyCredentials struct {
+	ClientID     string
+	ClientSecret string
+	RedirectURI  string
 }
 
-func NewSpotifyService(clientId, redirectUri string, httpClient *http.Client) *SpotifyService {
+type SpotifyTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+}
+
+type SpotifyUser struct {
+	Id          string `json:"id"`
+	DisplayName string `json:"display_name"`
+	Images      []struct {
+		Url    string `json:"url"`
+		Width  int    `json:"width"`
+		Height int    `json:"height"`
+	} `json:"images"`
+}
+
+type SpotifyService struct {
+	clientId     string
+	clientSecret string
+	redirectUri  string
+	httpClient   *http.Client
+}
+
+func GetSpotifyCredentials() SpotifyCredentials {
+	return SpotifyCredentials{
+		ClientID:     os.Getenv("SPOTIFY_CLIENT_ID"),
+		ClientSecret: os.Getenv("SPOTIFY_CLIENT_SECRET"),
+		RedirectURI:  os.Getenv("SPOTIFY_REDIRECT_URI"),
+	}
+}
+
+func NewSpotifyService(credentials SpotifyCredentials, httpClient *http.Client) *SpotifyService {
 	if httpClient == nil {
 		httpClient = &http.Client{
 			Timeout: time.Second * 30,
 		}
 	}
 
-	return &SpotifyService{clientId, redirectUri, httpClient}
+	return &SpotifyService{
+		clientId:     credentials.ClientID,
+		clientSecret: credentials.ClientSecret,
+		redirectUri:  credentials.RedirectURI,
+		httpClient:   httpClient,
+	}
 }
 
 func (s *SpotifyService) GetAuthUrl() (string, error) {
@@ -42,6 +81,54 @@ func (s *SpotifyService) GetAuthUrl() (string, error) {
 	authUrl.RawQuery = q.Encode()
 
 	return authUrl.String(), nil
+}
+
+func (s *SpotifyService) GetApiToken(code string) (string, error) {
+	data := url.Values{}
+	data.Set("grant_type", "authorization_code")
+	data.Set("code", code)
+	data.Set("redirect_uri", s.redirectUri)
+
+	tokenReq, err := http.NewRequest(
+		"POST",
+		"https://accounts.spotify.com/api/token",
+		strings.NewReader(data.Encode()),
+	)
+	if err != nil {
+		return "", err
+	}
+	tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	tokenReq.SetBasicAuth(s.clientId, s.clientSecret)
+	tokenRes, err := s.httpClient.Do(tokenReq)
+	if err != nil {
+		log.Println(err)
+		return "", err
+	}
+	defer tokenRes.Body.Close()
+
+	tokenResJson := SpotifyTokenResponse{}
+	if err := json.NewDecoder(tokenRes.Body).Decode(&tokenResJson); err != nil {
+		return "", err
+	}
+
+	return tokenResJson.AccessToken, nil
+}
+
+func (s *SpotifyService) GetUser(accessToken string) (*SpotifyUser, error) {
+	userReq, err := http.NewRequest("GET", "https://api.spotify.com/v1/me", nil)
+	userReq.Header.Set("Authorization", "Bearer "+accessToken)
+	userRes, err := s.httpClient.Do(userReq)
+	if err != nil {
+		return nil, err
+	}
+	defer userRes.Body.Close()
+
+	spotifyUser := SpotifyUser{}
+	if err := json.NewDecoder(userRes.Body).Decode(&spotifyUser); err != nil {
+		return nil, err
+	}
+
+	return &spotifyUser, nil
 }
 
 func (s *SpotifyService) GetScope() []string {
