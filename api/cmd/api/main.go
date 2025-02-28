@@ -5,17 +5,18 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
 	"github.com/edgejay/pify-player/api/internal/server"
+	"github.com/edgejay/pify-player/api/internal/utils"
 )
 
 func main() {
-	port := os.Getenv("PORT")
-	corsOrigins := strings.Split(os.Getenv("CORS_ORIGINS"), ",")
-	sslDomain := os.Getenv("SSL_DOMAIN")
+	serverSettings := utils.GetServerSettings()
+	port := serverSettings.Port
+	corsOrigins := serverSettings.CorsOrigins
+	sslDomain := serverSettings.SslDomain
 
 	server := server.NewServer(port, corsOrigins, sslDomain)
 

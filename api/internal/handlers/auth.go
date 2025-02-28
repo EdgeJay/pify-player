@@ -5,13 +5,13 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/labstack/echo/v4"
 
 	"github.com/edgejay/pify-player/api/internal/services"
+	"github.com/edgejay/pify-player/api/internal/utils"
 )
 
 const (
@@ -49,7 +49,6 @@ type SpotifyUserResponse struct {
 func SetAuthRoutes(group *echo.Group) {
 	group.GET("/login", login)
 	group.GET("/callback", getCallback)
-	group.POST("/callback", postCallback)
 }
 
 func login(c echo.Context) error {
@@ -59,8 +58,10 @@ func login(c echo.Context) error {
 	if err != nil || cookie == nil {
 		log.Println("User not logged in")
 
-		clientId := os.Getenv("SPOTIFY_CLIENT_ID")
-		redirectUri := os.Getenv("SPOTIFY_REDIRECT_URI")
+		spotifyCredentials := utils.GetSpotifyCredentials()
+
+		clientId := spotifyCredentials.ClientID
+		redirectUri := spotifyCredentials.RedirectURI
 
 		spotifyService := services.NewSpotifyService(clientId, redirectUri, nil)
 		authUrl, err := spotifyService.GetAuthUrl()
@@ -86,9 +87,10 @@ func getCallback(c echo.Context) error {
 	}
 
 	// get access token
-	clientId := os.Getenv("SPOTIFY_CLIENT_ID")
-	clientSecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
-	redirectUri := os.Getenv("SPOTIFY_REDIRECT_URI")
+	spotifyCredentials := utils.GetSpotifyCredentials()
+	clientId := spotifyCredentials.ClientID
+	clientSecret := spotifyCredentials.ClientSecret
+	redirectUri := spotifyCredentials.RedirectURI
 
 	data := url.Values{}
 	data.Set("grant_type", "authorization_code")
@@ -131,67 +133,6 @@ func getCallback(c echo.Context) error {
 	log.Println("cookie is valid:", cookie.Valid())
 	c.SetCookie(cookie)
 
-	return c.Redirect(http.StatusTemporaryRedirect, os.Getenv("CALLBACK_DEST"))
-}
-
-func postCallback(c echo.Context) error {
-	payload := callbackPayload{}
-	if err := c.Bind(&payload); err != nil {
-		return c.JSON(http.StatusBadRequest, loginResponse{LoggedIn: false, ErrorCode: "invalid_payload"})
-	}
-
-	if payload.Code == "" || payload.State == "" {
-		return c.JSON(http.StatusBadRequest, loginResponse{LoggedIn: false, ErrorCode: "missing_code_or_state"})
-	}
-
-	// get access token
-	clientId := os.Getenv("SPOTIFY_CLIENT_ID")
-	clientSecret := os.Getenv("SPOTIFY_CLIENT_SECRET")
-	redirectUri := os.Getenv("SPOTIFY_REDIRECT_URI")
-
-	data := url.Values{}
-	data.Set("grant_type", "authorization_code")
-	data.Set("code", payload.Code)
-	data.Set("redirect_uri", redirectUri)
-
-	tokenReq, err := http.NewRequest("POST", "https://accounts.spotify.com/api/token", strings.NewReader(data.Encode()))
-	if err != nil {
-		return err
-	}
-
-	tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	tokenReq.SetBasicAuth(clientId, clientSecret)
-
-	client := &http.Client{
-		Timeout: time.Second * 30,
-	}
-
-	tokenRes, err := client.Do(tokenReq)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	defer tokenRes.Body.Close()
-
-	tokenResJson := SpotifyTokenResponse{}
-	if err := json.NewDecoder(tokenRes.Body).Decode(&tokenResJson); err != nil {
-		return err
-	}
-
-	// set cookies
-	cookie := &http.Cookie{}
-	cookie.Name = COOKIE_SESSION_ID
-	cookie.Value = tokenResJson.AccessToken
-	cookie.Path = "/"
-	cookie.SameSite = http.SameSiteNoneMode
-	cookie.HttpOnly = true
-	cookie.Secure = true
-	cookie.Expires = time.Now().Add(1 * time.Hour)
-	log.Println("cookie is valid:", cookie.Valid())
-	c.SetCookie(cookie)
-
-	return c.JSON(http.StatusOK, tokenResJson)
-
 	/*
 		// get user info
 		userReq, err := http.NewRequest("GET", "https://api.spotify.com/v1/me", nil)
@@ -210,4 +151,6 @@ func postCallback(c echo.Context) error {
 
 		return c.JSON(http.StatusOK, userResJson)
 	*/
+
+	return c.Redirect(http.StatusTemporaryRedirect, utils.GetCallbackDestination())
 }

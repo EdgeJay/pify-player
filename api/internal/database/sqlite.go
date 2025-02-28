@@ -4,12 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 
 	"github.com/uptrace/bun"
 	"github.com/uptrace/bun/dialect/sqlitedialect"
 	"github.com/uptrace/bun/driver/sqliteshim"
 	"github.com/uptrace/bun/extra/bundebug"
+
+	"github.com/edgejay/pify-player/api/internal/utils"
 )
 
 type SQLiteDB struct {
@@ -26,7 +27,7 @@ func initSQLiteDB() {
 
 	db = &SQLiteDB{}
 
-	dbFile := os.Getenv("DB_FILE")
+	dbFile := utils.GetDBFilename()
 	if dbFile == "" {
 		dbFile = "./database/db.sqlite3"
 	}
