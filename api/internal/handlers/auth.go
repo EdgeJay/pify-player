@@ -41,7 +41,17 @@ func login(c echo.Context) error {
 	// check if user is already logged in
 	cookie, err := c.Cookie(COOKIE_SESSION_ID)
 
-	if err != nil || cookie == nil {
+	loggedIn := false
+
+	if err == nil && cookie != nil {
+		// check if session id stored in cookie is valid
+		if session, err := userService.GetSession(cookie.Value); session != nil && err == nil {
+			// valid session
+			loggedIn = true
+		}
+	}
+
+	if !loggedIn {
 		log.Println("User not logged in")
 
 		authUrl, err := spotifyService.GetAuthUrl()
@@ -52,7 +62,7 @@ func login(c echo.Context) error {
 		// Instruct client to goto Spotify login page
 		return c.JSON(http.StatusOK, loginResponse{LoggedIn: false, RedirectUrl: authUrl})
 	} else {
-		// check if session is valid
+		log.Printf("existing session %s found \n", cookie.Value)
 	}
 
 	return c.JSON(http.StatusOK, loginResponse{LoggedIn: true})
@@ -66,19 +76,19 @@ func getCallback(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, loginResponse{LoggedIn: false, ErrorCode: "missing_code_or_state"})
 	}
 
-	accessToken, err := spotifyService.GetApiToken(code)
+	tokenRes, err := spotifyService.GetApiToken(code)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, loginResponse{LoggedIn: false, ErrorCode: "get_access_token_failed"})
 	}
 
 	// get user info
-	spotifyUser, err := spotifyService.GetUser(accessToken)
+	spotifyUser, err := spotifyService.GetUser(tokenRes.AccessToken)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, loginResponse{LoggedIn: false, ErrorCode: "get_user_info_failed"})
 	}
 
 	// save user info into DB
-	_, err = userService.SaveUser(spotifyUser.Id)
+	dbUser, err := userService.SaveUser(spotifyUser.Id)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, loginResponse{LoggedIn: false, ErrorCode: "save_user_info_failed"})
 	}
@@ -87,6 +97,19 @@ func getCallback(c echo.Context) error {
 	sessionId, err := uuid.NewV7()
 
 	// save session into DB
+	session, err := userService.SaveSession(
+		dbUser.Id,
+		sessionId.String(),
+		c.Request().UserAgent(),
+		tokenRes.AccessToken,
+		tokenRes.RefreshToken,
+		time.Now().Add(time.Duration(tokenRes.ExpiresIn)*time.Second),
+	)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, loginResponse{LoggedIn: false, ErrorCode: "save_session_failed"})
+	}
+
+	log.Println("user session created:", session.Uuid)
 
 	// set cookies
 	c.SetCookie(utils.CreateCookie(

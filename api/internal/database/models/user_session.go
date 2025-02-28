@@ -16,7 +16,7 @@ type UserSession struct {
 	AccessToken           string
 	AccessTokenExpiresAt  time.Time
 	RefreshToken          string
-	RefreshTokenExpiresAt time.Time
-	CreatedAt             time.Time `bun:",notnull,default:current_timestamp"`
-	DeletedAt             time.Time `bun:",soft_delete"`
+	RefreshTokenExpiresAt *time.Time
+	CreatedAt             time.Time  `bun:",notnull,default:current_timestamp"`
+	DeletedAt             *time.Time `bun:",soft_delete"`
 }

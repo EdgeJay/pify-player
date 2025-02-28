@@ -83,7 +83,7 @@ func (s *SpotifyService) GetAuthUrl() (string, error) {
 	return authUrl.String(), nil
 }
 
-func (s *SpotifyService) GetApiToken(code string) (string, error) {
+func (s *SpotifyService) GetApiToken(code string) (*SpotifyTokenResponse, error) {
 	data := url.Values{}
 	data.Set("grant_type", "authorization_code")
 	data.Set("code", code)
@@ -95,23 +95,23 @@ func (s *SpotifyService) GetApiToken(code string) (string, error) {
 		strings.NewReader(data.Encode()),
 	)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	tokenReq.SetBasicAuth(s.clientId, s.clientSecret)
 	tokenRes, err := s.httpClient.Do(tokenReq)
 	if err != nil {
 		log.Println(err)
-		return "", err
+		return nil, err
 	}
 	defer tokenRes.Body.Close()
 
 	tokenResJson := SpotifyTokenResponse{}
 	if err := json.NewDecoder(tokenRes.Body).Decode(&tokenResJson); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return tokenResJson.AccessToken, nil
+	return &tokenResJson, nil
 }
 
 func (s *SpotifyService) GetUser(accessToken string) (*SpotifyUser, error) {

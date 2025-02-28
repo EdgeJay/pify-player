@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"database/sql"
+	"time"
 
 	"github.com/edgejay/pify-player/api/internal/database"
 	"github.com/edgejay/pify-player/api/internal/database/models"
@@ -64,4 +65,72 @@ func (s *UserService) SaveUser(username string) (*models.User, error) {
 	}
 
 	return user, nil
+}
+
+func (s *UserService) SessionExists(sessionId string) (bool, error) {
+	// check if session exists
+	session := &models.UserSession{}
+
+	return s.db.Bun.NewSelect().
+		Model(session).
+		Where("uuid = ?", sessionId).
+		Exists(context.Background())
+}
+
+func (s *UserService) GetSession(sessionId string) (*models.UserSession, error) {
+	// fetch session
+	session := &models.UserSession{}
+
+	// Get user from database
+	if err := s.db.Bun.NewSelect().
+		Model(session).
+		Where("uuid = ?", sessionId).
+		Scan(context.Background()); err != nil {
+		return nil, err
+	}
+
+	return session, nil
+}
+
+func (s *UserService) SaveSession(
+	userId int64,
+	sessionId,
+	userAgent,
+	accessToken,
+	refreshToken string,
+	accessTokenExpiresAt time.Time,
+) (*models.UserSession, error) {
+	// check if session exists
+	exists, err := s.SessionExists(sessionId)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if !exists {
+		// or else create new session
+		_, err = s.db.Bun.NewInsert().
+			Model(&models.UserSession{
+				UserId:                userId,
+				Uuid:                  sessionId,
+				UserAgent:             userAgent,
+				AccessToken:           accessToken,
+				RefreshToken:          refreshToken,
+				AccessTokenExpiresAt:  accessTokenExpiresAt,
+				RefreshTokenExpiresAt: nil,
+				DeletedAt:             nil,
+			}).
+			Exec(context.Background())
+
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// fetch session
+	return s.GetSession(sessionId)
 }
