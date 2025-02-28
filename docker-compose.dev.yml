@@ -35,7 +35,7 @@ services:
       - ./api/.env
     environment:
       - PORT=443
-      - CORS_ORIGINS=huijie-mbp.local
+      - CORS_ORIGINS=https://huijie-mbp.local:5173
       - SSL_DOMAIN=huijie-mbp.local
     networks:
       - pify-player-dev-network

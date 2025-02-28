@@ -1,141 +1,133 @@
-<div class="player">
-	<div class="equalizer">
-		<div class="bar"></div>
-		<div class="bar"></div>
-		<div class="bar"></div>
-		<div class="bar"></div>
-		<div class="bar"></div>
-	</div>
-	<div class="player-container">
-		<header class="player-header">
-			<h1><marquee>Cyberpunk Music Player</marquee></h1>
-		</header>
-		<section class="player-controls">
-			<button>&#9664;&#9664;</button>
-			<button>&#9654;</button>
-			<button>&#10074;&#10074;</button>
-			<button>&#9654;&#9654;</button>
-		</section>
-		<section class="player-progress">
-			<input type="range" min="0" max="100" value="0" />
-		</section>
-	</div>
-</div>
+<script lang="ts">
+	import { onMount } from 'svelte';
 
-<style>
-	.player {
-		display: flex;
-		flex-direction: column;
-		justify-content: flex-end;
-		align-items: center;
-		height: 100%;
-		padding-bottom: 50px;
-	}
-	.player-container {
-		flex: 0;
-		background-color: #1a1a1a;
-		border: 2px solid #00ff00;
-		border-radius: 10px;
-		padding: 20px;
-		width: 90%;
-		box-shadow: 0 0 20px #00ff00;
-	}
-	@media screen and (min-width: 800px) {
-		.player-container {
-			max-width: 640px;
-		}
-	}
-	.player-header {
-		text-align: center;
-		margin-bottom: 20px;
-	}
-	.player-controls {
-		display: flex;
-		justify-content: space-around;
-		align-items: center;
-	}
-	.player-controls button {
-		background-color: #00ff00;
-		border: none;
-		border-radius: 50%;
-		width: 50px;
-		height: 50px;
-		color: #0f0f0f;
-		font-size: 18px;
-		cursor: pointer;
-		transition: background-color 0.3s;
-	}
-	.player-controls button:hover {
-		background-color: #00cc00;
-	}
-	.player-progress {
-		margin-top: 20px;
-	}
-	.player-progress input[type='range'] {
-		width: 100%;
-		-webkit-appearance: none;
-		appearance: none;
-		background: #005500; /* Slightly lighter shade of dark green */
-		height: 5px;
-		border-radius: 5px;
-		outline: none;
-	}
-	.player-progress input[type='range']::-webkit-slider-thumb {
-		-webkit-appearance: none;
-		appearance: none;
-		width: 15px;
-		height: 15px;
-		background: #128912; /* Dark green color */
-		border-radius: 50%;
-		cursor: pointer;
-	}
-	.player-progress input[type='range']::-moz-range-thumb {
-		width: 15px;
-		height: 15px;
-		background: #006400; /* Dark green color */
-		border-radius: 50%;
-		cursor: pointer;
+	let deviceId = $state('');
+	let spotifyTrack: Spotify.Track | undefined = $state();
+	let playbackPaused = $state(true);
+	let position = $state(0);
+	let duration = $state(0);
+	let errorMessage = $state('');
+
+	const convertToMinutes = (ms: number): number => {
+		const minutes = Math.floor((ms / 60000) * 100) / 100;
+		return minutes;
+	};
+
+	interface LoginResponse {
+		id: number;
+		access_token: string;
+		display_name: string;
 	}
 
-	.equalizer {
-		display: flex;
-		flex: 1;
-		justify-content: space-around;
-		align-items: center;
-		margin-bottom: 50px;
-	}
-	.equalizer .bar {
-		width: 10px;
-		height: 50px;
-		background-color: #00ff00;
-		animation: equalizer 1s infinite;
-	}
-	.equalizer .bar:nth-child(1) {
-		background-color: #ff4000;
-		animation-delay: 0s;
-	}
-	.equalizer .bar:nth-child(2) {
-		background-color: #ff7300;
-		animation-delay: 0.2s;
-	}
-	.equalizer .bar:nth-child(3) {
-		background-color: #ffd000;
-		animation-delay: 0.4s;
-	}
-	.equalizer .bar:nth-child(4) {
-		animation-delay: 0.6s;
-	}
-	.equalizer .bar:nth-child(5) {
-		background-color: #00aeff;
-		animation-delay: 0.8s;
-	}
-	@keyframes equalizer {
-		0%,
-		100% {
-			transform: scaleY(1);
-		}
-		50% {
-			transform: scaleY(2);
-		}
-	}
-</style>
+	onMount(() => {
+		window.onSpotifyWebPlaybackSDKReady = async () => {
+			let token = '';
+
+			const player = new Spotify.Player({
+				name: 'Pify Player',
+				getOAuthToken: (cb) => {
+					cb(token);
+				},
+				volume: 0.5
+			});
+
+			try {
+				const response = await fetch('https://huijie-mbp.local:8080/api/auth/player', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json'
+					}
+				});
+
+				if (!response.ok) {
+					throw new Error('Login failed');
+				}
+
+				const { access_token: accessToken } = (await response.json()) as LoginResponse;
+				token = accessToken;
+
+				console.log('Login successful with token:', token);
+
+				player.connect();
+			} catch (error) {
+				console.error('Login error:', error);
+				errorMessage = error instanceof Error ? error.message : 'Login failed';
+			}
+
+			// Player Ready
+			player.addListener('ready', ({ device_id }) => {
+				// console.log('Ready with Device ID', device_id);
+				deviceId = device_id;
+			});
+
+			// Player Not Ready
+			player.addListener('not_ready', ({ device_id }) => {
+				console.log('Device ID has gone offline', device_id);
+				errorMessage = `Device ID has gone offline: ${device_id}`;
+			});
+
+			player.addListener('initialization_error', ({ message }) => {
+				// console.error(message);
+				errorMessage = message;
+			});
+
+			player.addListener('authentication_error', ({ message }) => {
+				// console.error(message);
+				errorMessage = message;
+			});
+
+			player.addListener('account_error', ({ message }) => {
+				// console.error(message);
+				errorMessage = message;
+			});
+
+			player.addListener('autoplay_failed', () => {
+				// console.log('Autoplay is not allowed by the browser autoplay rules');
+				errorMessage = 'Autoplay is not allowed by the browser autoplay rules';
+			});
+
+			let intervalId: NodeJS.Timeout | undefined;
+
+			player.addListener('player_state_changed', ({ paused, track_window: { current_track } }) => {
+				spotifyTrack = current_track;
+				playbackPaused = paused;
+
+				if (intervalId) {
+					clearInterval(intervalId);
+				}
+
+				if (!paused) {
+					intervalId = setInterval(async () => {
+						console.log('interval running');
+						if (!playbackPaused) {
+							await updatePlaybackPosition();
+						}
+					}, 1000);
+				} else {
+					if (intervalId) {
+						console.log('cleared interval');
+						clearInterval(intervalId);
+					}
+				}
+			});
+
+			const updatePlaybackPosition = async () => {
+				const state = await player.getCurrentState();
+				if (state) {
+					position = convertToMinutes(state.position);
+					duration = convertToMinutes(state.duration);
+				}
+			};
+		};
+
+		const script = document.createElement('script');
+		script.src = 'https://sdk.scdn.co/spotify-player.js';
+		document.body.appendChild(script);
+	});
+</script>
+
+<p>Device ID: {deviceId}</p>
+<p>Song Title: {spotifyTrack?.name || ''}</p>
+<p>Playback Paused: {playbackPaused}</p>
+<p>Position: {position} / {duration} min</p>
+<p>Error Message: {errorMessage}</p>

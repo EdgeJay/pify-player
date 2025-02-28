@@ -52,8 +52,9 @@ func (svr *Server) Start() {
 
 		// Enable CORS middleware
 		svr.e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-			AllowOrigins: svr.corsOrigins, // Change this to specific domains for security
-			AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+			AllowOrigins:     svr.corsOrigins, // Change this to specific domains for security
+			AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+			AllowCredentials: true,
 		}))
 	}
 
