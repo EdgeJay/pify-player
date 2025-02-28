@@ -39,7 +39,7 @@
 	</div>
 	<div class="player-container">
 		<header class="player-header">
-			<h1><marquee>Cyberpunk Music Player</marquee></h1>
+			<h1>Cyberpunk Music Player</h1>
 		</header>
 		<section class="player-controls">
 			<button>&#9664;&#9664;</button>
