@@ -108,7 +108,7 @@ func (s *UserService) SaveSession(
 	}
 
 	if !exists {
-		// or else create new session
+		// create new session
 		_, err = s.db.Bun.NewInsert().
 			Model(&models.UserSession{
 				UserId:                userId,
@@ -126,6 +126,26 @@ func (s *UserService) SaveSession(
 			return nil, err
 		}
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// fetch session
+	return s.GetSession(sessionId)
+}
+
+func (s *UserService) UpdateSessionAccessToken(
+	sessionId,
+	accessToken string,
+	accessTokenExpiresAt time.Time,
+) (*models.UserSession, error) {
+	_, err := s.db.Bun.NewUpdate().
+		Model((*models.UserSession)(nil)).
+		Set("access_token = ?", accessToken).
+		Set("access_token_expires_at = ?", accessTokenExpiresAt).
+		Where("uuid = ?", sessionId).
+		Exec(context.Background())
 
 	if err != nil {
 		return nil, err

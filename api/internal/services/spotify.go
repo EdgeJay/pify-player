@@ -101,6 +101,36 @@ func (s *SpotifyService) GetApiToken(code string) (*SpotifyTokenResponse, error)
 	tokenReq.SetBasicAuth(s.clientId, s.clientSecret)
 	tokenRes, err := s.httpClient.Do(tokenReq)
 	if err != nil {
+		return nil, err
+	}
+	defer tokenRes.Body.Close()
+
+	tokenResJson := SpotifyTokenResponse{}
+	if err := json.NewDecoder(tokenRes.Body).Decode(&tokenResJson); err != nil {
+		return nil, err
+	}
+
+	return &tokenResJson, nil
+}
+
+func (s *SpotifyService) RefreshApiToken(refreshToken string) (*SpotifyTokenResponse, error) {
+	data := url.Values{}
+	data.Set("grant_type", "refresh_token")
+	data.Set("refresh_token", refreshToken)
+	data.Set("client_id", s.clientId)
+
+	tokenReq, err := http.NewRequest(
+		"POST",
+		"https://accounts.spotify.com/api/token",
+		strings.NewReader(data.Encode()),
+	)
+	if err != nil {
+		return nil, err
+	}
+	tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// tokenReq.SetBasicAuth(s.clientId, s.clientSecret)
+	tokenRes, err := s.httpClient.Do(tokenReq)
+	if err != nil {
 		log.Println(err)
 		return nil, err
 	}

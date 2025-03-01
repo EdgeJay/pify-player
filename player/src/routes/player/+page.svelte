@@ -8,22 +8,39 @@
 	let duration = $state(0);
 	let errorMessage = $state('');
 
+	let player: Spotify.Player;
+	let token = '';
+
 	const convertToMinutes = (ms: number): number => {
 		const minutes = Math.floor((ms / 60000) * 100) / 100;
 		return minutes;
 	};
 
-	interface LoginResponse {
-		id: number;
-		access_token: string;
-		display_name: string;
+	interface WSCommand {
+		command: string;
+		payload?: {
+			[key: string]: string;
+		};
 	}
+
+	interface WSResponse {
+		command: string;
+		body: unknown;
+	}
+
+	interface WSConnectResponse {
+		access_token: string;
+	}
+
+	const onConnectResponse = (payload: WSConnectResponse) => {
+		// Connect to Spotify after receiving token
+		token = payload.access_token;
+		player.connect();
+	};
 
 	onMount(() => {
 		window.onSpotifyWebPlaybackSDKReady = async () => {
-			let token = '';
-
-			const player = new Spotify.Player({
+			player = new Spotify.Player({
 				name: 'Pify Player',
 				getOAuthToken: (cb) => {
 					cb(token);
@@ -31,28 +48,33 @@
 				volume: 0.5
 			});
 
-			try {
-				const response = await fetch('https://huijie-mbp.local:8080/api/auth/player', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json'
-					}
-				});
+			// establish WebSocket connection
+			const ws = new WebSocket('wss://huijie-mbp.local:8080/api/player/ws');
 
-				if (!response.ok) {
-					throw new Error('Login failed');
+			ws.onopen = () => {
+				const command: WSCommand = {
+					command: 'connect'
+				};
+				ws.send(JSON.stringify(command));
+			};
+
+			ws.onmessage = async (event) => {
+				const response = JSON.parse(event.data) as WSResponse;
+				switch (response.command) {
+					case 'connect':
+						onConnectResponse(response.body as WSConnectResponse);
+						break;
 				}
+			};
 
-				const { access_token: accessToken } = (await response.json()) as LoginResponse;
-				token = accessToken;
+			ws.onerror = (error) => {
+				errorMessage = 'WebSocket error occurred';
+				console.error('WebSocket error:', error);
+			};
 
-				console.log('Login successful with token:', token);
-
-				player.connect();
-			} catch (error) {
-				console.error('Login error:', error);
-				errorMessage = error instanceof Error ? error.message : 'Login failed';
-			}
+			ws.onclose = () => {
+				errorMessage = 'WebSocket connection closed';
+			};
 
 			// Player Ready
 			player.addListener('ready', ({ device_id }) => {

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
+	let loggedIn = $state(false);
+
 	interface LoginResponse {
 		logged_in: boolean;
 		redirect_url: string;
@@ -21,12 +23,18 @@
 		}
 
 		const { logged_in, redirect_url } = (await response.json()) as LoginResponse;
+		loggedIn = logged_in;
+
 		if (!logged_in) {
 			window.location.href = redirect_url;
 		} else {
 			console.log('Already logged in');
 		}
 	});
+
+	const onPlayButton = () => {
+		console.log('go connect');
+	};
 </script>
 
 <div class="player">
@@ -42,10 +50,11 @@
 			<h1>Cyberpunk Music Player</h1>
 		</header>
 		<section class="player-controls">
-			<button>&#9664;&#9664;</button>
-			<button>&#9654;</button>
-			<button>&#10074;&#10074;</button>
-			<button>&#9654;&#9654;</button>
+			<button disabled={!loggedIn}>&#9664;&#9664;</button>
+			<button onclick={onPlayButton} disabled={!loggedIn}>&#9654;</button>
+			<!-- play button -->
+			<button disabled={!loggedIn}>&#10074;&#10074;</button>
+			<button disabled={!loggedIn}>&#9654;&#9654;</button>
 		</section>
 		<section class="player-progress">
 			<input type="range" min="0" max="100" value="0" />

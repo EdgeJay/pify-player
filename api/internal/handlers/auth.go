@@ -46,6 +46,27 @@ func login(c echo.Context) error {
 	if err == nil && cookie != nil {
 		// check if session id stored in cookie is valid
 		if session, err := userService.GetSession(cookie.Value); session != nil && err == nil {
+			// check accessToken expiry
+			if time.Now().After(session.AccessTokenExpiresAt) {
+				// refresh access token
+				log.Printf("access token expired at %v\n", session.AccessTokenExpiresAt)
+				log.Println("refreshing access token...")
+				if res, err := spotifyService.RefreshApiToken(session.RefreshToken); err == nil {
+					log.Println("got new access token")
+					// save access token into DB
+					log.Println(session.Uuid)
+					if _, err := userService.UpdateSessionAccessToken(
+						session.Uuid,
+						res.AccessToken,
+						time.Now().Add(time.Duration(res.ExpiresIn)*time.Second),
+					); err != nil {
+						return err
+					}
+				} else {
+					return err
+				}
+			}
+
 			// valid session
 			loggedIn = true
 		}
@@ -115,7 +136,7 @@ func getCallback(c echo.Context) error {
 	c.SetCookie(utils.CreateCookie(
 		COOKIE_SESSION_ID,
 		sessionId.String(),
-		time.Now().Add(1*time.Hour)),
+		time.Now().Add(720*time.Hour)), // 30 days
 	)
 
 	return c.Redirect(http.StatusTemporaryRedirect, utils.GetCallbackDestination())
