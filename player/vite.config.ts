@@ -45,8 +45,8 @@ export default defineConfig(({ mode }) => {
 
 		server: {
 			https: {
-				key: fs.readFileSync(`./certs/${env.DOMAIN}.key.pem`),
-				cert: fs.readFileSync(`./certs/${env.DOMAIN}.pem`)
+				key: fs.readFileSync(`./certs/${env.VITE_DOMAIN}.key.pem`),
+				cert: fs.readFileSync(`./certs/${env.VITE_DOMAIN}.pem`)
 			},
 			allowedHosts,
 			hmr: {
