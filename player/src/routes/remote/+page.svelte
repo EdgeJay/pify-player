@@ -8,6 +8,10 @@
 		redirect_url: string;
 	}
 
+	interface RemoteResponse {
+		success: boolean;
+	}
+
 	onMount(async () => {
 		// check login status first
 		const response = await fetch('https://huijie-mbp.local:8080/api/auth/login', {
@@ -32,8 +36,16 @@
 		}
 	});
 
-	const onPlayButton = () => {
-		console.log('go connect');
+	const onPlayButton = async () => {
+		const response = await fetch('https://huijie-mbp.local:8080/api/remote/play', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			credentials: 'include'
+		});
+		const { success } = (await response.json()) as RemoteResponse;
+		console.log(`success: ${success}`);
 	};
 </script>
 

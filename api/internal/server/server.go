@@ -62,8 +62,10 @@ func (svr *Server) Start() {
 	apiGroup := svr.e.Group("/api")
 	authGroup := apiGroup.Group("/auth")
 	playerGroup := apiGroup.Group("/player")
+	remoteGroup := apiGroup.Group("/remote")
 	handlers.SetAuthRoutes(authGroup)
 	handlers.SetPlayerRoutes(playerGroup)
+	handlers.SetRemoteRoutes(remoteGroup)
 
 	log.Printf("Server is running on port %s...\n", svr.port)
 

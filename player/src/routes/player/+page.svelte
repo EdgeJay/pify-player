@@ -34,6 +34,7 @@
 
 	const onConnectResponse = (payload: WSConnectResponse) => {
 		// Connect to Spotify after receiving token
+		console.log(`received access token: ${payload.access_token}`);
 		token = payload.access_token;
 		player.connect();
 	};
@@ -47,6 +48,7 @@
 				},
 				volume: 0.5
 			});
+			player.activateElement();
 
 			// establish WebSocket connection
 			const ws = new WebSocket('wss://huijie-mbp.local:8080/api/player/ws');

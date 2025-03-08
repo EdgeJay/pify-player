@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
+	"log"
 
 	"github.com/edgejay/pify-player/api/internal/database"
 	"github.com/edgejay/pify-player/api/internal/services"
@@ -15,45 +15,45 @@ type WSCommand struct {
 	Payload map[string]string
 }
 
+type WSResponse struct {
+	Command string            `json:"command"`
+	Body    map[string]string `json:"body"`
+}
+
 var playerService *services.PlayerService = services.NewPlayerService(database.GetSQLiteDB())
 
-func parseWebsocketMessage(msg string) error {
+var playerWebsocket *websocket.Conn
+
+func parseWebsocketMessage(ws *websocket.Conn, msg string) error {
 	command := WSCommand{}
 	if err := json.Unmarshal([]byte(msg), &command); err == nil {
 		// update database to indicate waiting state
 		switch command.Command {
 		case "connect":
+			playerWebsocket = ws
 			err := playerService.SetWaitingState()
-			fmt.Println(err)
+			log.Println(err)
 		}
 	} else {
-		fmt.Println(err)
+		log.Println(err)
 		return err
 	}
 	return nil
 }
 
 func SetPlayerRoutes(group *echo.Group) {
-	group.GET("/ws", playerWebSocket)
+	group.GET("/ws", playerWebsocketEndpoint)
 }
 
-func playerWebSocket(c echo.Context) error {
+func playerWebsocketEndpoint(c echo.Context) error {
 	websocket.Handler(func(ws *websocket.Conn) {
 		defer ws.Close()
 		for {
-			/*
-				// Write
-				err := websocket.Message.Send(ws, "Hello, Client!")
-				if err != nil {
-					c.Logger().Error(err)
-				}
-			*/
-
 			// Read
 			msg := ""
 			err := websocket.Message.Receive(ws, &msg)
 			if err == nil {
-				fmt.Println(parseWebsocketMessage(msg))
+				log.Println(parseWebsocketMessage(ws, msg))
 			} else {
 				// c.Logger().Error(err)
 			}

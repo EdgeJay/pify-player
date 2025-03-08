@@ -52,7 +52,7 @@ func login(c echo.Context) error {
 				log.Printf("access token expired at %v\n", session.AccessTokenExpiresAt)
 				log.Println("refreshing access token...")
 				if res, err := spotifyService.RefreshApiToken(session.RefreshToken); err == nil {
-					log.Println("got new access token")
+					// log.Println("got new access token: res.AccessToken")
 					// save access token into DB
 					log.Println(session.Uuid)
 					if _, err := userService.UpdateSessionAccessToken(
