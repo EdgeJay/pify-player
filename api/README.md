@@ -8,8 +8,9 @@ API backend of Pify Player, written in Go
 
 ## Getting Started
 
-1. Run `go mod download` in this folder.
-2. Run `make start` command from project root to start server.
+1. Create `.env` file by copying `.env.example` file and edit the env vars.
+2. Run `go mod download` in this folder.
+3. Run `make start` command from project root to start server.
 
 ## Development
 

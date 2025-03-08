@@ -53,15 +53,9 @@ Follow [this guide](https://words.filippo.io/mkcert-valid-https-certificates-for
 
 ## Getting Started
 
-To get started in development mode, follow these steps first to install `player` service dependencies:
+To get started in development mode, follow the `Getting Started` instructions stated in [api/README.md](./api/README.md) and [player/README.md](./player/README.md) files.
 
-1. `cd player`
-2. `npm install`
-3. `cd ../ && make start-dev`
-
-Subsequent builds only execution of `make start-dev` command is needed, as `npm install` is needed to installed dependencies needed by frontend.
-
-Open frontend application in browser using this url: `http://127.0.0.1:5173/`
+Once setup is done, open frontend application in browser using this url: `http://127.0.0.1:5173/remote`
 
 ## Running in production mode
 

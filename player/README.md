@@ -2,9 +2,14 @@
 
 Web player that can be accessed by mobile/desktop browsers to control Spotify playback. Application setup using Sveltekit.
 
+## Getting Started
+
+1. Create `.env` file by copying `.env.example` file and edit the env vars.
+2. Make sure you have Node.js v22+ installed, and run `npm install` command to install dependencies.
+
 ## Developing
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+Start the development server:
 
 ```bash
 npm run dev
