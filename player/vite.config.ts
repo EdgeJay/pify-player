@@ -45,8 +45,8 @@ export default defineConfig(({ mode }) => {
 
 		server: {
 			https: {
-				key: fs.readFileSync('./certs/huijie-mbp.local.key.pem'),
-				cert: fs.readFileSync('./certs/huijie-mbp.local.pem')
+				key: fs.readFileSync(`./certs/${env.DOMAIN}.key.pem`),
+				cert: fs.readFileSync(`./certs/${env.DOMAIN}.pem`)
 			},
 			allowedHosts,
 			hmr: {
