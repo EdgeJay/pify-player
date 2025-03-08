@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { VITE_DOMAIN } from '$env/static/private';
 
 	let loggedIn = $state(false);
 
@@ -15,7 +14,8 @@
 
 	onMount(async () => {
 		// check login status first
-		const response = await fetch(`https://${VITE_DOMAIN}:8080/api/auth/login`, {
+		const DOMAIN = window.location.hostname;
+		const response = await fetch(`https://${DOMAIN}:8080/api/auth/login`, {
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json'
@@ -38,7 +38,8 @@
 	});
 
 	const onPlayButton = async () => {
-		const response = await fetch(`https://${VITE_DOMAIN}:8080/api/remote/play`, {
+		const DOMAIN = window.location.hostname;
+		const response = await fetch(`https://${DOMAIN}:8080/api/remote/play`, {
 			method: 'POST',
 			headers: {
 				'Content-Type': 'application/json'

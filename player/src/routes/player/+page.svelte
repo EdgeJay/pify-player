@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { VITE_DOMAIN } from '$env/static/private';
 
 	let deviceId = $state('');
 	let spotifyTrack: Spotify.Track | undefined = $state();
@@ -52,7 +51,8 @@
 			player.activateElement();
 
 			// establish WebSocket connection
-			const ws = new WebSocket(`wss://${VITE_DOMAIN}:8080/api/player/ws`);
+			const DOMAIN = window.location.hostname;
+			const ws = new WebSocket(`wss://${DOMAIN}:8080/api/player/ws`);
 
 			ws.onopen = () => {
 				const command: WSCommand = {
