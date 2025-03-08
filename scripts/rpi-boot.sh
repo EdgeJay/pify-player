@@ -14,4 +14,4 @@ until [ "`docker inspect -f {{.State.Running}} pify-player-frontend`"=="true" ];
     sleep 0.5;
 done;
 
-nohup chromium-browser --no-user-gesture-required https://workbench-rpi.local:5173/player &>/dev/null>&
+chromium-browser --no-user-gesture-required https://workbench-rpi.local:5173/player > /home/workbench-rpi-admin/repos/pify-player/scripts/logs.chromium.txt 2>&1
