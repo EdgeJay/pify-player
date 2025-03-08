@@ -10,6 +10,9 @@ start:
 start-dev:
 	@docker compose -f docker-compose.dev.yml up --build
 
+start-dev-bg:
+	@docker compose -f docker-compose.dev.yml up --detach
+
 destroy:
 	@docker compose -f docker-compose.yml down --rmi all
 
