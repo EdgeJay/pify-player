@@ -15,8 +15,8 @@ services:
       - /app/node_modules
     depends_on:
       - api
-    environment:
-      - NODE_ENV=development
+    env_file:
+      - ./player/.env
     networks:
       - pify-player-dev-network
 
@@ -33,10 +33,6 @@ services:
       - ./api/database:/app/database
     env_file:
       - ./api/.env
-    environment:
-      - PORT=443
-      - CORS_ORIGINS=https://huijie-mbp.local:5173
-      - SSL_DOMAIN=huijie-mbp.local
     networks:
       - pify-player-dev-network
 
