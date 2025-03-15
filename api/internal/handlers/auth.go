@@ -15,11 +15,6 @@ import (
 	"github.com/edgejay/pify-player/api/internal/utils"
 )
 
-type callbackPayload struct {
-	Code  string `json:"code"`
-	State string `json:"state"`
-}
-
 func SetAuthRoutes(group *echo.Group) {
 	group.GET("/login", login, middlewareFactory.Auth())
 	group.GET("/callback", getCallback)
