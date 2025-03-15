@@ -32,10 +32,13 @@ func parseWebsocketMessage(ws *websocket.Conn, msg string) error {
 		case "connect":
 			playerWebsocket = ws
 			err := playerService.SetWaitingState()
-			log.Println(err)
+			if err != nil {
+				log.Println("websocket connect error:", err)
+				return err
+			}
 		}
 	} else {
-		log.Println(err)
+		log.Println("websocket parse message error:", err)
 		return err
 	}
 	return nil

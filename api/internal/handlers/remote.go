@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/edgejay/pify-player/api/internal/constants"
 	"github.com/edgejay/pify-player/api/internal/database/models"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/net/websocket"
@@ -20,8 +21,10 @@ func SetRemoteRoutes(group *echo.Group) {
 }
 
 func remoteStartPlayback(c echo.Context) error {
+	log.Println("remote starting playback...")
+
 	// check if user is already logged in
-	cookie, err := c.Cookie(COOKIE_SESSION_ID)
+	cookie, err := c.Cookie(constants.COOKIE_SESSION_ID)
 	loggedIn := false
 
 	var session *models.UserSession
@@ -31,6 +34,8 @@ func remoteStartPlayback(c echo.Context) error {
 		if session != nil && err == nil {
 			if time.Now().Before(session.AccessTokenExpiresAt) {
 				loggedIn = true
+			} else {
+				log.Println("access token expired")
 			}
 		}
 	}
@@ -48,6 +53,9 @@ func remoteStartPlayback(c echo.Context) error {
 			}
 
 			err = websocket.Message.Send(playerWebsocket, string(payload))
+			if err != nil {
+				return c.JSON(http.StatusBadRequest, RemoteResponse{false})
+			}
 
 			return c.JSON(http.StatusOK, RemoteResponse{true})
 		}
