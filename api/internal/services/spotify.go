@@ -146,6 +146,10 @@ func (s *SpotifyService) RefreshApiToken(refreshToken string) (*SpotifyTokenResp
 
 func (s *SpotifyService) GetUser(accessToken string) (*SpotifyUser, error) {
 	userReq, err := http.NewRequest("GET", "https://api.spotify.com/v1/me", nil)
+	if err != nil {
+		return nil, err
+	}
+
 	userReq.Header.Set("Authorization", "Bearer "+accessToken)
 	userRes, err := s.httpClient.Do(userReq)
 	if err != nil {

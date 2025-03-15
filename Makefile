@@ -18,3 +18,6 @@ destroy:
 
 destroy-dev:
 	@docker compose -f docker-compose.dev.yml down --rmi all
+
+test:
+	@cd api && go test ./...
