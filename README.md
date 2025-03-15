@@ -60,3 +60,7 @@ Once setup is done, open frontend application in browser using this url: `http:/
 ## Running in production mode
 
 `make start`
+
+## Development Logs
+
+Development logs documenting thought process and planning involved for Pify Player can be found [here](./docs/README.md).

@@ -1,0 +1,19 @@
+@startuml User Flow V1
+
+start
+:Scan NFC tag;
+:Open remote page;
+
+if (Is user logged in?) then (no)
+    :Redirect to Spotify 
+    login page;
+    if (Successfully logged in?) then (no)
+        stop
+    endif
+endif
+
+:Press play to
+start playback;
+stop
+
+@enduml

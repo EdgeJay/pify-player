@@ -1,0 +1,18 @@
+@startuml Software Architecture V1
+
+package "Frontend: SvelteKit" {
+    [Player]
+    [Remote]
+}
+
+package "Backend: Go" {
+    HTTP - [API]
+    [Player] --> HTTP
+
+    "Web socket" - [API]
+    [Player] --> "Web socket"
+    
+    [Remote] --> HTTP
+}
+
+@enduml
