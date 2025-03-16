@@ -87,6 +87,9 @@ func getCallback(c echo.Context) error {
 func logout(c echo.Context) error {
 	cookie := c.Get("cookie").(*http.Cookie)
 	userService := c.Get("userService").(*services.UserService)
+	// delete session in database
 	userService.DeleteSession(cookie.Value)
+	// delete cookie
+	c.SetCookie(utils.CreateCookie(constants.COOKIE_SESSION_ID, "", time.Now().Add(-1*time.Hour)))
 	return c.JSON(http.StatusOK, pifyHttp.LoginResponse{LoggedIn: false})
 }
