@@ -24,6 +24,7 @@ func (s *UserService) GetUser(username string) (*models.User, error) {
 	err := s.db.Bun.NewSelect().
 		Model(user).
 		Where("username = ?", username).
+		Where("deleted_at IS NULL").
 		Scan(context.Background())
 
 	if err == sql.ErrNoRows {
@@ -37,29 +38,48 @@ func (s *UserService) GetUser(username string) (*models.User, error) {
 	return user, nil
 }
 
-func (s *UserService) SaveUser(username string) (*models.User, error) {
+func (s *UserService) SaveUser(spotifyUser *SpotifyUser) (*models.User, error) {
 	// check if user by username exists
-	user, err := s.GetUser(username)
+	user, err := s.GetUser(spotifyUser.Id)
 	if err != nil {
 		return nil, err
 	}
 
-	// Return existing user if found
+	// Update existing user record if found
 	if user != nil && user.Id > 0 {
-		return user, nil
-	}
+		profileImageUrl := ""
+		if len(spotifyUser.Images) > 0 {
+			profileImageUrl = spotifyUser.Images[0].Url
+		}
 
-	// or else create new user
-	_, err = s.db.Bun.NewInsert().
-		Model(&models.User{Username: username, DeletedAt: nil}).
-		Exec(context.Background())
+		_, err := s.db.Bun.NewUpdate().
+			Model((*models.User)(nil)).
+			Set("display_name = ?", spotifyUser.DisplayName).
+			Set("profile_image_url = ?", profileImageUrl).
+			Where("username = ?", spotifyUser.Id).
+			Exec(context.Background())
 
-	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// or else create new user
+		_, err := s.db.Bun.NewInsert().
+			Model(&models.User{
+				Username:        spotifyUser.Id,
+				DisplayName:     spotifyUser.DisplayName,
+				ProfileImageUrl: spotifyUser.Images[0].Url,
+				DeletedAt:       nil,
+			}).
+			Exec(context.Background())
+
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Get user from database
-	user, err = s.GetUser(username)
+	user, err = s.GetUser(spotifyUser.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -74,6 +94,7 @@ func (s *UserService) SessionExists(sessionId string) (bool, error) {
 	return s.db.Bun.NewSelect().
 		Model(session).
 		Where("uuid = ?", sessionId).
+		Where("deleted_at IS NULL").
 		Exists(context.Background())
 }
 
@@ -85,6 +106,7 @@ func (s *UserService) GetSession(sessionId string) (*models.UserSession, error) 
 	if err := s.db.Bun.NewSelect().
 		Model(session).
 		Where("uuid = ?", sessionId).
+		Where("deleted_at IS NULL").
 		Scan(context.Background()); err != nil {
 		return nil, err
 	}

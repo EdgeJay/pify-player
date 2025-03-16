@@ -117,7 +117,6 @@ func (s *SpotifyService) RefreshApiToken(refreshToken string) (*SpotifyTokenResp
 	data := url.Values{}
 	data.Set("grant_type", "refresh_token")
 	data.Set("refresh_token", refreshToken)
-	data.Set("client_id", s.clientId)
 
 	tokenReq, err := http.NewRequest(
 		"POST",
@@ -128,7 +127,7 @@ func (s *SpotifyService) RefreshApiToken(refreshToken string) (*SpotifyTokenResp
 		return nil, err
 	}
 	tokenReq.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	// tokenReq.SetBasicAuth(s.clientId, s.clientSecret)
+	tokenReq.SetBasicAuth(s.clientId, s.clientSecret)
 	tokenRes, err := s.httpClient.Do(tokenReq)
 	if err != nil {
 		log.Println(err)
