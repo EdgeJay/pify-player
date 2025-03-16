@@ -1,4 +1,4 @@
-include .env
+include .env ./api/.env
 export
 
 generate-ssl:
@@ -18,6 +18,18 @@ destroy:
 
 destroy-dev:
 	@docker compose -f docker-compose.dev.yml down --rmi all
+
+migration-create-go:
+	@cd api && DB_FILE=$(DB_FILE) go run ./cmd/migrations/main.go db create_go $(name)
+
+migration-create-sql:
+	@cd api && DB_FILE=$(DB_FILE) go run ./cmd/migrations/main.go db create_sql $(name)
+
+migrate:
+	@cd api && DB_FILE=$(DB_FILE) go run ./cmd/migrations/main.go db migrate
+
+rollback:
+	@cd api && DB_FILE=$(DB_FILE) go run ./cmd/migrations/main.go db rollback
 
 test:
 	@cd api && go test ./...
