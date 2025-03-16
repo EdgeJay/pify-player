@@ -12,12 +12,14 @@ import (
 	"github.com/edgejay/pify-player/api/internal/database/models"
 	"github.com/edgejay/pify-player/api/internal/errors"
 	pifyHttp "github.com/edgejay/pify-player/api/internal/http"
+	"github.com/edgejay/pify-player/api/internal/services"
 	"github.com/edgejay/pify-player/api/internal/utils"
 )
 
 func SetAuthRoutes(group *echo.Group) {
 	group.GET("/login", login, middlewareFactory.Auth())
 	group.GET("/callback", getCallback)
+	group.GET("/logout", logout, middlewareFactory.GetCookie(), middlewareFactory.GetUserService())
 }
 
 func login(c echo.Context) error {
@@ -80,4 +82,11 @@ func getCallback(c echo.Context) error {
 	)
 
 	return c.Redirect(http.StatusTemporaryRedirect, utils.GetCallbackDestination())
+}
+
+func logout(c echo.Context) error {
+	cookie := c.Get("cookie").(*http.Cookie)
+	userService := c.Get("userService").(*services.UserService)
+	userService.DeleteSession(cookie.Value)
+	return c.JSON(http.StatusOK, pifyHttp.LoginResponse{LoggedIn: false})
 }

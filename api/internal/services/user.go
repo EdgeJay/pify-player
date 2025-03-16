@@ -176,3 +176,11 @@ func (s *UserService) UpdateSessionAccessToken(
 	// fetch session
 	return s.GetSession(sessionId)
 }
+
+func (s *UserService) DeleteSession(sessionId string) error {
+	_, err := s.db.Bun.NewDelete().
+		Model((*models.UserSession)(nil)).
+		Where("uuid = ?", sessionId).
+		Exec(context.Background())
+	return err
+}
