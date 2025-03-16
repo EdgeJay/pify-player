@@ -41,7 +41,7 @@ In terms of jobs handled by the apps, it will be split in this manner:
 
 1. Serve pages that will provide Spotify login.
 2. Provide player page that will provide song playback via Spotify's Web Player SDK.
-3. Also act as remote control for the Pify Player, and the pages will be accessed by mobile device in the same network.
+3. Also act as "remote control" for the Pify Player, and the pages will be accessed by mobile device in the same network.
 
 ### Backend
 
@@ -78,14 +78,27 @@ As song playback is done via Chromium browser (one of the default web browsers t
 
 Frontend is powered mainly by SvelteKit.
 
+#### Backend
+
+
 ## 4. Version 2 Architecture
+
+Around the time when the working prototype based on Version 1 architecture was created, I came across the [SmartiPi Touch 2 for Raspberry Pi Display](https://sg.cytron.io/p-smartipi-touch-2-for-raspberry-pi-display) which I felt could be a better solution than using NFC tag to invoke opening of remote control page in mobile device. Plus having a touch screen connected to the Raspberry Pi 5 provides additional and more convenient interaction options:
+
+- Show QR code that contains link to remote control/login page
+- Show playback controls on screen
+- Display additional animations
+
+The [SmartiPi Touch 2 for Raspberry Pi Display](https://sg.cytron.io/p-smartipi-touch-2-for-raspberry-pi-display) is a good choice as its casing can house the Raspberry Pi 5 as well, and comes with a stand which makes it easy to stick the entire touch screen display + RPi on top of the Creative Stage Air V2 sound bar, and this setup has lesser wire clutter.
 
 ### APIs needed
 
-1. 
+Same as APIs needed for version 1 architecture.
 
 ### Hardware needed
 
-1. 
+Similar hardware needed for version 1 architecture, but NFC tag is omitted and touch screen display is needed.
+
+1. [SmartiPi Touch 2 for Raspberry Pi Display](https://sg.cytron.io/p-smartipi-touch-2-for-raspberry-pi-display)
 
 ### Software Architecture
