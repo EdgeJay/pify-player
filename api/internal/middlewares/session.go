@@ -54,8 +54,8 @@ func (mw *MiddlewareFactory) Auth() func(echo.HandlerFunc) echo.HandlerFunc {
 				log.Printf("access token expired at %v\n", session.AccessTokenExpiresAt)
 				log.Println("refreshing access token...")
 				if res, err := mw.spotifyService.RefreshApiToken(session.RefreshToken); err == nil {
-					// log.Println("got new access token: res.AccessToken")
-					// log.Println(session.Uuid)
+					log.Println("got new access token:", res.AccessToken)
+					log.Println(session.Uuid)
 					// save access token into DB
 					if _, err := mw.userService.UpdateSessionAccessToken(
 						session.Uuid,

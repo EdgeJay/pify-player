@@ -46,7 +46,7 @@ func getCallback(c echo.Context) error {
 	}
 
 	// save user info into DB
-	dbUser, err := userService.SaveUser(spotifyUser.Id)
+	dbUser, err := userService.SaveUser(spotifyUser)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, pifyHttp.LoginResponse{LoggedIn: false, ErrorCode: errors.SAVE_USER_INFO_FAILED})
 	}
