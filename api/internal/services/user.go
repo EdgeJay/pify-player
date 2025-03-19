@@ -7,6 +7,7 @@ import (
 
 	"github.com/edgejay/pify-player/api/internal/database"
 	"github.com/edgejay/pify-player/api/internal/database/models"
+	"github.com/uptrace/bun"
 )
 
 type UserService struct {
@@ -105,8 +106,11 @@ func (s *UserService) GetSession(sessionId string) (*models.UserSession, error) 
 	// Get user from database
 	if err := s.db.Bun.NewSelect().
 		Model(session).
-		Where("uuid = ?", sessionId).
-		Where("deleted_at IS NULL").
+		Relation("User", func(sq *bun.SelectQuery) *bun.SelectQuery {
+			return sq.Column("display_name", "profile_image_url")
+		}).
+		Where("user_session.uuid = ?", sessionId).
+		Where("user_session.deleted_at IS NULL").
 		Scan(context.Background()); err != nil {
 		return nil, err
 	}

@@ -25,7 +25,13 @@ func SetAuthRoutes(group *echo.Group) {
 func login(c echo.Context) error {
 	session := c.Get("session").(*models.UserSession)
 	log.Printf("existing session %s found \n", session.Uuid)
-	return c.JSON(http.StatusOK, pifyHttp.LoginResponse{LoggedIn: true})
+	return c.JSON(http.StatusOK, pifyHttp.LoginResponse{
+		LoggedIn: true,
+		User: &pifyHttp.UserDetails{
+			DisplayName:     session.User.DisplayName,
+			ProfileImageUrl: session.User.ProfileImageUrl,
+		},
+	})
 }
 
 func getCallback(c echo.Context) error {
