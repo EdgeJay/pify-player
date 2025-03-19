@@ -52,6 +52,7 @@ After installing, enable keyboard through "Display" tab in Raspberry Pi Configur
 
 ## References
 
+https://www.raspberrypi.com/tutorials/how-to-use-a-raspberry-pi-in-kiosk-mode/
 https://www.raspberrypi.com/documentation/accessories/display.html
 https://www.raspberrypi.com/documentation/computers/config_txt.html
 https://www.reddit.com/r/raspberry_pi/comments/18iwpay/starting_desktop_from_cli_on_rpi_5_startx_command/
