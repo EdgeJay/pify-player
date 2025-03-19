@@ -47,7 +47,7 @@ func initSQLiteDB() {
 	db.SQL = sqldb
 	db.Bun = bun.NewDB(db.SQL, sqlitedialect.New())
 	db.Bun.AddQueryHook(bundebug.NewQueryHook(
-		bundebug.WithEnabled(false),
+		bundebug.WithEnabled(true),
 		bundebug.FromEnv(),
 	))
 

@@ -1,0 +1,1 @@
+ALTER TABLE user_sessions ADD COLUMN is_controller BOOLEAN;
