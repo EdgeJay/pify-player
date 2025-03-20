@@ -34,6 +34,21 @@ type SpotifyUser struct {
 	} `json:"images"`
 }
 
+type SpotifyDevice struct {
+	ID               string `json:"id"`
+	IsActive         bool   `json:"is_active"`
+	IsPrivateSession bool   `json:"is_private_session"`
+	IsRestricted     bool   `json:"is_restricted"`
+	Name             string `json:"name"`
+	Type             string `json:"type"`
+	VolumePercent    int    `json:"volume_percent"`
+	SupportsVolume   bool   `json:"supports_volume"`
+}
+
+type SpotifyDevices struct {
+	Devices []SpotifyDevice `json:"devices"`
+}
+
 type SpotifyService struct {
 	clientId     string
 	clientSecret string
@@ -162,6 +177,27 @@ func (s *SpotifyService) GetUser(accessToken string) (*SpotifyUser, error) {
 	}
 
 	return &spotifyUser, nil
+}
+
+func (s *SpotifyService) GetUserDevices(accessToken string) (*SpotifyDevices, error) {
+	deviceReq, err := http.NewRequest("GET", "https://api.spotify.com/v1/me/player/devices", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	deviceReq.Header.Set("Authorization", "Bearer "+accessToken)
+	deviceRes, err := s.httpClient.Do(deviceReq)
+	if err != nil {
+		return nil, err
+	}
+	defer deviceRes.Body.Close()
+
+	spotifyDevices := SpotifyDevices{}
+	if err := json.NewDecoder(deviceRes.Body).Decode(&spotifyDevices); err != nil {
+		return nil, err
+	}
+
+	return &spotifyDevices, nil
 }
 
 func (s *SpotifyService) GetScope() []string {

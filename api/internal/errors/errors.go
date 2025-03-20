@@ -1,5 +1,6 @@
 package errors
 
+// auth related error codes
 const (
 	MISSING_CODE_OR_STATE      = "missing_code_or_state"
 	GET_ACCESS_TOKEN_FAILED    = "get_access_token_failed"
@@ -7,4 +8,9 @@ const (
 	SAVE_USER_INFO_FAILED      = "save_user_info_failed"
 	GENERATE_SESSION_ID_FAILED = "generate_session_id_failed"
 	SAVE_SESSION_FAILED        = "save_session_failed"
+)
+
+// api related error codes
+const (
+	GET_DEVICES_FAILED = "get_devices_failed"
 )

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { checkSession } from '$lib/session';
+	import { getAllDevices } from '$lib/device';
 
 	let loggedIn = $state(false);
 	let displayName = $state('');
@@ -20,6 +21,10 @@
 			} else {
 				console.log('Already logged in');
 				displayName = user.display_name;
+
+				// get all devices
+				const devices = await getAllDevices();
+				console.log(devices);
 			}
 		} catch (err) {
 			console.error(err);

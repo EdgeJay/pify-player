@@ -30,6 +30,7 @@ func login(c echo.Context) error {
 		User: &pifyHttp.UserDetails{
 			DisplayName:     session.User.DisplayName,
 			ProfileImageUrl: session.User.ProfileImageUrl,
+			IsController:    session.IsController,
 		},
 	})
 }
