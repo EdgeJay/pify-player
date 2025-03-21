@@ -2,13 +2,12 @@
 	import { onMount } from 'svelte';
 	import { checkSession } from '$lib/session';
 	import { getAllDevices } from '$lib/device';
+	import type { Device } from '$lib/device';
 
+	let { data } = $props();
 	let loggedIn = $state(false);
 	let displayName = $state('');
-
-	interface RemoteResponse {
-		success: boolean;
-	}
+	let devices = $state<Device[]>([]);
 
 	onMount(async () => {
 		// check login status first
@@ -23,7 +22,7 @@
 				displayName = user.display_name;
 
 				// get all devices
-				const devices = await getAllDevices();
+				devices = (await getAllDevices()).data.devices;
 				console.log(devices);
 			}
 		} catch (err) {
@@ -31,29 +30,37 @@
 		}
 	});
 
-	/*
-	const onPlayButton = async () => {
-		const DOMAIN = window.location.hostname;
-		const response = await fetch(`https://${DOMAIN}:8080/api/remote/play`, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			credentials: 'include'
-		});
-		const { success } = (await response.json()) as RemoteResponse;
-		console.log(`success: ${success}`);
+	const onRefreshButton = async () => {
+		// get all devices
+		devices = (await getAllDevices()).data.devices;
 	};
-    */
+
+	const onLogoutButton = async () => {
+		console.log('logout!');
+	};
 </script>
 
 <div class="home">
 	<div class="home-container">
 		<header class="home-header">
-			<h1>Pify Player</h1>
+			<h1>{data.playerName}</h1>
 			<p>Welcome back {displayName}</p>
 		</header>
-		<section></section>
+		<section class="home-controls">
+			<p>Devices:</p>
+			{#if devices.length > 0}
+				<ul>
+					{#each devices as device}
+						<li>{device.type} | {device.name}</li>
+					{/each}
+				</ul>
+			{:else}
+				<p>No devices found</p>
+			{/if}
+
+			<button onclick={onRefreshButton} style="margin-top:50px;">Refresh</button>
+			<button onclick={onLogoutButton} style="margin-top:15px;">Logout</button>
+		</section>
 	</div>
 </div>
 
@@ -66,6 +73,7 @@
 		height: 100%;
 		padding-bottom: 50px;
 	}
+
 	.home-container {
 		flex: 0;
 		background-color: #1a1a1a;
@@ -76,6 +84,7 @@
 		width: 90%;
 		box-shadow: 0 0 20px #00ff00;
 	}
+
 	@media screen and (min-width: 800px) {
 		.home-container {
 			max-width: 640px;
@@ -83,5 +92,13 @@
 	}
 	.home-header {
 		text-align: center;
+	}
+
+	.home-controls {
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-start;
+		align-items: center;
+		margin-top: 20px;
 	}
 </style>

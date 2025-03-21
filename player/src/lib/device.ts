@@ -1,4 +1,4 @@
-interface Device {
+export interface Device {
 	id: string;
 	is_active: boolean;
 	is_private_session: boolean;
@@ -9,7 +9,7 @@ interface Device {
 	supports_volume: boolean;
 }
 
-interface AllDevicesResponse {
+export interface AllDevicesResponse {
 	data: {
 		devices: Device[];
 	};
