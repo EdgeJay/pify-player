@@ -24,17 +24,49 @@ var playerService *services.PlayerService = services.NewPlayerService(database.G
 
 var playerWebsocket *websocket.Conn
 
-func parseWebsocketMessage(ws *websocket.Conn, msg string) error {
+func parseWebsocketMessage(c echo.Context, ws *websocket.Conn, msg string) error {
+
 	command := WSCommand{}
+
 	if err := json.Unmarshal([]byte(msg), &command); err == nil {
+		spotifyService := c.Get("spotifyService").(*services.SpotifyService)
+
 		// update database to indicate waiting state
 		switch command.Command {
 		case "connect":
 			playerWebsocket = ws
-			err := playerService.SetWaitingState()
+			accessToken := ""
+			session, err := playerService.Connect()
 			if err != nil {
 				log.Println("websocket connect error:", err)
 				return err
+			} else {
+				accessToken = session.AccessToken
+				// check if access token is still valid
+				if res, err := spotifyService.CheckAndRefreshApiToken(session.AccessTokenExpiresAt, session.RefreshToken); err != nil {
+					return err
+				} else if res != nil {
+					accessToken = res.AccessToken
+				}
+
+				// return access token
+				payload, err := json.Marshal(WSResponse{
+					Command: "connect",
+					Body: map[string]string{
+						"access_token": accessToken,
+					},
+				})
+
+				if err != nil {
+					log.Println("unable to marshal websocket response", err)
+					return err
+				}
+
+				err = websocket.Message.Send(playerWebsocket, string(payload))
+				if err != nil {
+					log.Println("unable to send websocket response", err)
+					return err
+				}
 			}
 		}
 	} else {
@@ -45,7 +77,7 @@ func parseWebsocketMessage(ws *websocket.Conn, msg string) error {
 }
 
 func SetPlayerRoutes(group *echo.Group) {
-	group.GET("/ws", playerWebsocketEndpoint)
+	group.GET("/ws", playerWebsocketEndpoint, middlewareFactory.GetSpotifyService())
 }
 
 func playerWebsocketEndpoint(c echo.Context) error {
@@ -56,9 +88,7 @@ func playerWebsocketEndpoint(c echo.Context) error {
 			msg := ""
 			err := websocket.Message.Receive(ws, &msg)
 			if err == nil {
-				log.Println(parseWebsocketMessage(ws, msg))
-			} else {
-				// c.Logger().Error(err)
+				parseWebsocketMessage(c, ws, msg)
 			}
 		}
 	}).ServeHTTP(c.Response(), c.Request())

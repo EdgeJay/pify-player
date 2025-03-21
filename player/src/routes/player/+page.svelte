@@ -151,8 +151,10 @@
 	});
 </script>
 
-<p>Device ID: {deviceId}</p>
-<p>Song Title: {spotifyTrack?.name || ''}</p>
-<p>Playback Paused: {playbackPaused}</p>
-<p>Position: {position} / {duration} min</p>
-<p>Error Message: {errorMessage}</p>
+<div style="margin-top:100px">
+	<p>Device ID: {deviceId}</p>
+	<p>Song Title: {spotifyTrack?.name || ''}</p>
+	<p>Playback Paused: {playbackPaused}</p>
+	<p>Position: {position} / {duration} min</p>
+	<p>Error Message: {errorMessage}</p>
+</div>

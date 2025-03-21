@@ -128,6 +128,17 @@ func (s *SpotifyService) GetApiToken(code string) (*SpotifyTokenResponse, error)
 	return &tokenResJson, nil
 }
 
+func (s *SpotifyService) CheckAndRefreshApiToken(accessTokenExpiresAt time.Time, refreshToken string) (*SpotifyTokenResponse, error) {
+	// check accessToken expiry
+	if time.Now().After(accessTokenExpiresAt) {
+		// refresh access token
+		log.Printf("access token expired at %v\n", accessTokenExpiresAt)
+		log.Println("refreshing access token...")
+		return s.RefreshApiToken(refreshToken)
+	}
+	return nil, nil
+}
+
 func (s *SpotifyService) RefreshApiToken(refreshToken string) (*SpotifyTokenResponse, error) {
 	data := url.Values{}
 	data.Set("grant_type", "refresh_token")
