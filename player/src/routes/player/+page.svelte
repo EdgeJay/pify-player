@@ -9,20 +9,22 @@
 	// song track and playback status related vars
 	let spotifyTrack: Spotify.Track | undefined = $state();
 	let playbackPaused = $state(true);
-	let position = $state(0);
-	let duration = $state(0);
+	let position = $state('');
+	let duration = $state('');
 	let albumImage = $state('');
 	let songTitle = $state('');
 	let songArtists = $state<string[]>([]);
+	let songProgress = $state(0);
 
 	let errorMessage = $state('');
 
 	let player: Spotify.Player;
 	let token = '';
 
-	const convertToMinutes = (ms: number): number => {
-		const minutes = Math.floor((ms / 60000) * 100) / 100;
-		return minutes;
+	const convertToMinutes = (ms: number): string => {
+		const minutes = Math.floor(ms / 60000);
+		const seconds = Math.floor((ms % 60000) / 1000);
+		return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 	};
 
 	onMount(() => {
@@ -129,26 +131,17 @@
 
 				if (!paused) {
 					intervalId = setInterval(async () => {
-						console.log('interval running');
 						if (!playbackPaused) {
 							await updatePlaybackPosition();
 						}
 					}, 1000);
 				} else {
 					if (intervalId) {
-						console.log('cleared interval');
+						// console.log('cleared interval');
 						clearInterval(intervalId);
 					}
 				}
 			});
-
-			const updatePlaybackPosition = async () => {
-				const state = await player.getCurrentState();
-				if (state) {
-					position = convertToMinutes(state.position);
-					duration = convertToMinutes(state.duration);
-				}
-			};
 		};
 
 		const script = document.createElement('script');
@@ -157,8 +150,25 @@
 	});
 
 	/* Playback controls */
+	const updatePlaybackPosition = async () => {
+		const state = await player.getCurrentState();
+		if (state) {
+			position = convertToMinutes(state.position);
+			duration = convertToMinutes(state.duration);
+			songProgress = Math.ceil((state.position / state.duration) * 100);
+		}
+	};
+
 	const onPlay = () => {
 		player.togglePlay();
+	};
+
+	const onNext = () => {
+		player.nextTrack();
+	};
+
+	const onPrev = () => {
+		player.previousTrack();
 	};
 </script>
 
@@ -172,6 +182,11 @@
 			<h1>{songTitle}</h1>
 			<p>{songArtists.join(', ')}</p>
 		</div>
+		<div class="progress">
+			<span>{position}</span>
+			<input type="range" step="1" style="--value:{songProgress};" value={songProgress} />
+			<span>{duration}</span>
+		</div>
 		<div class="controls">
 			<button class="sm" aria-label="Volume">
 				<i class="fa fa-volume-high"></i>
@@ -179,13 +194,13 @@
 			<button class="sm" aria-label="Shuffle">
 				<i class="fa fa-shuffle"></i>
 			</button>
-			<button aria-label="Previous">
+			<button aria-label="Previous" onclick={onPrev}>
 				<i class="fa fa-backward"></i>
 			</button>
 			<button class="play" onclick={onPlay} aria-label="Play">
 				<i class="fa {playbackPaused ? 'fa-play' : 'fa-pause'}"></i>
 			</button>
-			<button aria-label="Next">
+			<button aria-label="Next" onclick={onNext}>
 				<i class="fa fa-forward"></i>
 			</button>
 			<button class="sm" aria-label="Repeat">
@@ -248,7 +263,61 @@
 		color: #585858;
 		height: 60px;
 		padding-left: 110px;
-		margin-bottom: 15px;
+		margin-bottom: 10px;
+	}
+
+	.progress {
+		display: flex;
+		flex-flow: row;
+		justify-content: space-between;
+		align-items: center;
+		height: 25px;
+		margin-bottom: 20px;
+	}
+
+	.progress span {
+		color: #585858;
+		font-size: 14px;
+		text-align: center;
+	}
+
+	.progress input[type='range'] {
+		--min: 0;
+		--max: 100;
+		--range: calc(var(--max) - var(--min));
+		--ratio: calc((var(--value) - var(--min)) / var(--range));
+		--sx: calc(0.5 * 7px + var(--ratio) * (100% - 7px));
+	}
+
+	.progress input[type='range'] {
+		appearance: none;
+		-webkit-appearance: none;
+		width: 100%;
+		height: 7px;
+		background: #9a9a9a;
+		border-radius: 4px;
+		margin: 0 15px;
+	}
+
+	.progress input[type='range']::-webkit-slider-thumb {
+		margin-top: -4px;
+		appearance: none;
+		-webkit-appearance: none;
+		background: #585858;
+		width: 16px;
+		aspect-ratio: 1/1;
+		border-radius: 50%;
+		outline: 2px solid #fff;
+		box-shadow: 0 6px 10px rgba(5, 36, 28, 0.3);
+	}
+
+	.progress input[type='range']::-webkit-slider-runnable-track {
+		height: 7px;
+		border: none;
+		border-radius: 4px;
+		background:
+			linear-gradient(#585858, #585858) 0 / var(--sx) 100% no-repeat,
+			#9a9a9a;
 	}
 
 	.controls {
