@@ -66,30 +66,6 @@ func (mw *MiddlewareFactory) Auth() func(echo.HandlerFunc) echo.HandlerFunc {
 				// no updates needed, access token is still valid
 			}
 
-			/*
-				// check accessToken expiry
-				if time.Now().After(session.AccessTokenExpiresAt) {
-					// refresh access token
-					log.Printf("access token expired at %v\n", session.AccessTokenExpiresAt)
-					log.Println("refreshing access token...")
-					if res, err := mw.spotifyService.RefreshApiToken(session.RefreshToken); err == nil {
-						log.Println("got new access token:", res.AccessToken)
-						log.Println(session.Uuid)
-						// save access token into DB
-						if _, err := mw.userService.UpdateSessionAccessToken(
-							session.Uuid,
-							res.AccessToken,
-							time.Now().Add(time.Duration(res.ExpiresIn)*time.Second),
-						); err != nil {
-							return err
-						}
-					} else {
-						// If token can't be refreshhed, instruct client to goto Spotify login page
-						return c.JSON(http.StatusOK, pifyHttp.LoginResponse{LoggedIn: false, RedirectUrl: authUrl})
-					}
-				}
-			*/
-
 			// Get session again
 			session, err = mw.userService.GetSession(cookie.Value)
 			if err != nil || session == nil {

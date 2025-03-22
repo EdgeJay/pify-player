@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { getApiConnectWS, sendConnectCommand, clearSpotifyTokenFromStorage } from '$lib/ws';
 
+	let { data } = $props();
 	let deviceId = $state('');
 	let spotifyTrack: Spotify.Track | undefined = $state();
 	let playbackPaused = $state(true);
@@ -16,72 +18,39 @@
 		return minutes;
 	};
 
-	interface WSCommand {
-		command: string;
-		payload?: {
-			[key: string]: string;
-		};
-	}
-
-	interface WSResponse {
-		command: string;
-		body: unknown;
-	}
-
-	interface WSConnectResponse {
-		access_token: string;
-	}
-
-	const onConnectResponse = (payload: WSConnectResponse) => {
-		// Connect to Spotify after receiving token
-		console.log(`received access token: ${payload.access_token}`);
-		token = payload.access_token;
-		player.connect();
-	};
-
 	onMount(() => {
 		window.onSpotifyWebPlaybackSDKReady = async () => {
 			player = new Spotify.Player({
-				name: 'Pify Player',
+				name: data.playerName,
 				getOAuthToken: (cb) => {
 					cb(token);
 				},
 				volume: 0.5
 			});
+			/* Activates an HTML element in the player instance. This is typically required before any media playback
+				can occur, especially in browsers that enforce user interaction before allowing audio/video playback. */
 			player.activateElement();
 
 			// establish WebSocket connection
-			const DOMAIN = window.location.hostname;
-			const ws = new WebSocket(`wss://${DOMAIN}:8080/api/player/ws`);
-
-			ws.onopen = () => {
-				const command: WSCommand = {
-					command: 'connect'
-				};
-				ws.send(JSON.stringify(command));
-			};
-
-			ws.onmessage = async (event) => {
-				const response = JSON.parse(event.data) as WSResponse;
-				switch (response.command) {
-					case 'connect':
-						onConnectResponse(response.body as WSConnectResponse);
-						break;
+			const ws = getApiConnectWS({
+				onConnect: (accessToken: string) => {
+					token = accessToken;
+					player.connect();
+				},
+				onError: (message) => {
+					errorMessage = message;
 				}
-			};
+			});
 
-			ws.onerror = (error) => {
-				errorMessage = 'WebSocket error occurred';
-				console.error('WebSocket error:', error);
-			};
-
-			ws.onclose = () => {
-				errorMessage = 'WebSocket connection closed';
+			const refreshAccessToken = (ws: WebSocket) => {
+				// Clear expired token
+				clearSpotifyTokenFromStorage();
+				sendConnectCommand(ws);
 			};
 
 			// Player Ready
 			player.addListener('ready', ({ device_id }) => {
-				// console.log('Ready with Device ID', device_id);
+				console.log('Ready with Device ID', device_id);
 				deviceId = device_id;
 			});
 
@@ -92,17 +61,23 @@
 			});
 
 			player.addListener('initialization_error', ({ message }) => {
-				// console.error(message);
 				errorMessage = message;
+			});
+
+			player.addListener('playback_error', ({ message }) => {
+				errorMessage = message;
+				if (message.includes('token expired')) {
+					refreshAccessToken(ws);
+				}
 			});
 
 			player.addListener('authentication_error', ({ message }) => {
-				// console.error(message);
+				console.log('authentication_error');
 				errorMessage = message;
+				refreshAccessToken(ws);
 			});
 
 			player.addListener('account_error', ({ message }) => {
-				// console.error(message);
 				errorMessage = message;
 			});
 
@@ -151,6 +126,38 @@
 	});
 </script>
 
+<div class="player">
+	<p>{errorMessage}</p>
+	<div class="panel">
+		<div class="album"></div>
+		<div class="song"></div>
+		<div class="controls">
+			<button class="sm" aria-label="Volume">
+				<i class="fa fa-volume-high"></i>
+			</button>
+			<button class="sm" aria-label="Shuffle">
+				<i class="fa fa-shuffle"></i>
+			</button>
+			<button aria-label="Previous">
+				<i class="fa fa-backward"></i>
+			</button>
+			<button class="play" aria-label="Play">
+				<i class="fa fa-play"></i>
+			</button>
+			<button aria-label="Next">
+				<i class="fa fa-forward"></i>
+			</button>
+			<button class="sm" aria-label="Repeat">
+				<i class="fa fa-repeat"></i>
+			</button>
+			<button class="sm" aria-label="Playlist">
+				<i class="fa fa-list"></i>
+			</button>
+		</div>
+	</div>
+</div>
+
+<!-- 
 <div style="margin-top:100px">
 	<p>Device ID: {deviceId}</p>
 	<p>Song Title: {spotifyTrack?.name || ''}</p>
@@ -158,3 +165,67 @@
 	<p>Position: {position} / {duration} min</p>
 	<p>Error Message: {errorMessage}</p>
 </div>
+-->
+
+<style>
+	.player {
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+		align-items: center;
+		height: 100%;
+		padding: 50px 20px;
+	}
+
+	.panel {
+		position: relative;
+		background-color: #fff;
+		box-shadow: 0 30px 80px #656565;
+		border-radius: 15px;
+		padding: 20px 30px;
+		min-width: 600px;
+	}
+
+	.album {
+		position: absolute;
+		top: -20px;
+		left: 20px;
+		width: 100px;
+		height: 100px;
+		background-color: #585858;
+		border: 5px solid #fff;
+		border-radius: 10px;
+		z-index: 10;
+	}
+
+	.song {
+		height: 60px;
+		padding-left: 110px;
+		margin-bottom: 15px;
+	}
+
+	.controls {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.controls button {
+		color: #585858;
+		font-size: 30px;
+	}
+
+	.controls button.play {
+		background-color: #585858;
+		color: #fff;
+		box-shadow: 0 10px 20px #656565;
+		width: 60px;
+		height: 60px;
+		border-radius: 30px;
+	}
+
+	.controls button.sm {
+		font-size: 18px;
+	}
+</style>
