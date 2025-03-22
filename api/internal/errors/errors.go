@@ -12,5 +12,10 @@ const (
 
 // api related error codes
 const (
-	GET_DEVICES_FAILED = "get_devices_failed"
+	UNKNOWN_ERROR        = "unknown_error"
+	GET_DEVICES_FAILED   = "get_devices_failed"
+	INVALID_REQUEST_BODY = "invalid_request_body"
+	BAD_OR_EXPIRED_TOKEN = "bad_or_expired_token"
+	BAD_OAUTH_REQUEST    = "bad_oauth_request"
+	RATE_LIMIT_EXCEEDED  = "rate_limit_exceeded"
 )
