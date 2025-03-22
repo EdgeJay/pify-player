@@ -1,13 +1,20 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { getApiConnectWS, sendConnectCommand, clearSpotifyTokenFromStorage } from '$lib/ws';
+	import { controlPlayback } from '$lib/device';
 
 	let { data } = $props();
 	let deviceId = $state('');
+
+	// song track and playback status related vars
 	let spotifyTrack: Spotify.Track | undefined = $state();
 	let playbackPaused = $state(true);
 	let position = $state(0);
 	let duration = $state(0);
+	let albumImage = $state('');
+	let songTitle = $state('');
+	let songArtists = $state<string[]>([]);
+
 	let errorMessage = $state('');
 
 	let player: Spotify.Player;
@@ -49,9 +56,19 @@
 			};
 
 			// Player Ready
-			player.addListener('ready', ({ device_id }) => {
+			player.addListener('ready', async ({ device_id }) => {
 				console.log('Ready with Device ID', device_id);
+				errorMessage = '';
 				deviceId = device_id;
+
+				// check playback state, take over as playback controls if state is null
+				const state = await player.getCurrentState();
+				if (!state) {
+					const success = await controlPlayback(token, deviceId);
+					if (success) {
+						console.log('took over playback control successfully');
+					}
+				}
 			});
 
 			// Player Not Ready
@@ -89,7 +106,21 @@
 			let intervalId: NodeJS.Timeout | undefined;
 
 			player.addListener('player_state_changed', ({ paused, track_window: { current_track } }) => {
+				console.log('player_state_changed');
+
 				spotifyTrack = current_track;
+				$state.snapshot(spotifyTrack);
+
+				// update song details
+				if (spotifyTrack.album.images.length > 0) {
+					albumImage = spotifyTrack.album.images[0].url;
+				}
+				songTitle = spotifyTrack.name;
+				songArtists = spotifyTrack.artists.reduce((acc, artist) => {
+					acc.push(artist.name);
+					return acc;
+				}, [] as string[]);
+
 				playbackPaused = paused;
 
 				if (intervalId) {
@@ -124,13 +155,23 @@
 		script.src = 'https://sdk.scdn.co/spotify-player.js';
 		document.body.appendChild(script);
 	});
+
+	/* Playback controls */
+	const onPlay = () => {
+		player.togglePlay();
+	};
 </script>
 
 <div class="player">
 	<p>{errorMessage}</p>
 	<div class="panel">
-		<div class="album"></div>
-		<div class="song"></div>
+		<div class="album">
+			<img src={albumImage} alt={songTitle} />
+		</div>
+		<div class="song">
+			<h1>{songTitle}</h1>
+			<p>{songArtists.join(', ')}</p>
+		</div>
 		<div class="controls">
 			<button class="sm" aria-label="Volume">
 				<i class="fa fa-volume-high"></i>
@@ -141,8 +182,8 @@
 			<button aria-label="Previous">
 				<i class="fa fa-backward"></i>
 			</button>
-			<button class="play" aria-label="Play">
-				<i class="fa fa-play"></i>
+			<button class="play" onclick={onPlay} aria-label="Play">
+				<i class="fa {playbackPaused ? 'fa-play' : 'fa-pause'}"></i>
 			</button>
 			<button aria-label="Next">
 				<i class="fa fa-forward"></i>
@@ -198,7 +239,13 @@
 		z-index: 10;
 	}
 
+	.album img {
+		width: 100%;
+		height: 100%;
+	}
+
 	.song {
+		color: #585858;
 		height: 60px;
 		padding-left: 110px;
 		margin-bottom: 15px;
