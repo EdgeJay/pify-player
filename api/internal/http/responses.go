@@ -1,4 +1,4 @@
-package responses
+package http
 
 type UserDetails struct {
 	DisplayName     string `json:"display_name"`

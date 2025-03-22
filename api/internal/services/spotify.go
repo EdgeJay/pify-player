@@ -1,7 +1,9 @@
 package services
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"net/url"
@@ -9,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	pifyErrors "github.com/edgejay/pify-player/api/internal/errors"
 	"github.com/edgejay/pify-player/api/internal/utils"
 )
 
@@ -47,6 +50,11 @@ type SpotifyDevice struct {
 
 type SpotifyDevices struct {
 	Devices []SpotifyDevice `json:"devices"`
+}
+
+type TransferPlaybackRequest struct {
+	DeviceIds []string `json:"device_ids"`
+	Play      bool     `json:"play"`
 }
 
 type SpotifyService struct {
@@ -209,6 +217,42 @@ func (s *SpotifyService) GetUserDevices(accessToken string) (*SpotifyDevices, er
 	}
 
 	return &spotifyDevices, nil
+}
+
+func (s *SpotifyService) TransferPlayback(accessToken, deviceId string) (bool, error) {
+	reqPayload := TransferPlaybackRequest{
+		DeviceIds: []string{deviceId},
+		Play:      false,
+	}
+	b, err := json.Marshal(reqPayload)
+	if err != nil {
+		return false, err
+	}
+
+	deviceReq, err := http.NewRequest("PUT", "https://api.spotify.com/v1/me/player", bytes.NewReader(b))
+	if err != nil {
+		return false, err
+	}
+
+	deviceReq.Header.Set("Authorization", "Bearer "+accessToken)
+	deviceReq.Header.Set("Content-Type", "application/json")
+	deviceRes, err := s.httpClient.Do(deviceReq)
+	if err != nil {
+		return false, err
+	}
+
+	switch deviceRes.StatusCode {
+	case http.StatusNoContent:
+		return true, nil
+	case http.StatusBadRequest:
+		return false, errors.New(pifyErrors.BAD_OR_EXPIRED_TOKEN)
+	case http.StatusForbidden:
+		return false, errors.New(pifyErrors.BAD_OAUTH_REQUEST)
+	case http.StatusTooManyRequests:
+		return false, errors.New(pifyErrors.RATE_LIMIT_EXCEEDED)
+	default:
+		return false, errors.New(pifyErrors.UNKNOWN_ERROR)
+	}
 }
 
 func (s *SpotifyService) GetScope() []string {

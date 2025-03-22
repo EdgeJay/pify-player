@@ -11,8 +11,15 @@ import (
 	"github.com/edgejay/pify-player/api/internal/services"
 )
 
+type ControlPlaybackRequest struct {
+	AccessToken string `json:"access_token"`
+	DeviceId    string `json:"device_id"`
+}
+
 func SetDeviceRoutes(group *echo.Group) {
 	group.GET("/all", allDevices, middlewareFactory.Auth(), middlewareFactory.GetSpotifyService())
+	// following endpoint is only meant to be called from player page only
+	group.POST("/control-playback", controlPlayback, middlewareFactory.GetSpotifyService())
 }
 
 func allDevices(c echo.Context) error {
@@ -31,4 +38,25 @@ func allDevices(c echo.Context) error {
 		Data:      devicesRes,
 		ErrorCode: "",
 	})
+}
+
+func controlPlayback(c echo.Context) error {
+	var req ControlPlaybackRequest
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, pifyHttp.ApiResponse{
+			Data:      nil,
+			ErrorCode: errors.INVALID_REQUEST_BODY,
+		})
+	}
+
+	spotifyService := c.Get("spotifyService").(*services.SpotifyService)
+	success, err := spotifyService.TransferPlayback(req.AccessToken, req.DeviceId)
+	if success {
+		return c.JSON(http.StatusNoContent, nil)
+	} else {
+		return c.JSON(http.StatusBadRequest, pifyHttp.ApiResponse{
+			Data:      nil,
+			ErrorCode: err.Error(),
+		})
+	}
 }
