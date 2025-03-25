@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	"crypto/subtle"
 	"log"
 	"net/http"
 	"time"
@@ -8,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	pifyHttp "github.com/edgejay/pify-player/api/internal/http"
+	"github.com/edgejay/pify-player/api/internal/utils"
 )
 
 /*
@@ -77,6 +79,30 @@ func (mw *MiddlewareFactory) Auth() func(echo.HandlerFunc) echo.HandlerFunc {
 			c.Set("session", session)
 
 			return next(c)
+		}
+	}
+}
+
+// BasicAuth creates a middleware that performs basic authentication
+func (mw *MiddlewareFactory) BasicAuth() func(echo.HandlerFunc) echo.HandlerFunc {
+	username := utils.GetBasicAuthUsername()
+	password := utils.GetBasicAuthPassword()
+
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			// Extract credentials from the request header
+			reqUsername, reqPassword, ok := c.Request().BasicAuth()
+			if !ok {
+				return echo.NewHTTPError(http.StatusUnauthorized, "Please provide valid credentials")
+			}
+
+			// Timing attack safe comparison
+			if subtle.ConstantTimeCompare([]byte(username), []byte(reqUsername)) == 1 &&
+				subtle.ConstantTimeCompare([]byte(password), []byte(reqPassword)) == 1 {
+				return next(c)
+			}
+
+			return echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
 		}
 	}
 }

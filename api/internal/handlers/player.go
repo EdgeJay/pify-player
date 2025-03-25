@@ -3,26 +3,48 @@ package handlers
 import (
 	"encoding/json"
 	"log"
+	"net/http"
 
 	"github.com/edgejay/pify-player/api/internal/database"
+	pifyHttp "github.com/edgejay/pify-player/api/internal/http"
 	"github.com/edgejay/pify-player/api/internal/services"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/net/websocket"
 )
 
-type WSCommand struct {
-	Command string
-	Payload map[string]string
-}
-
-type WSResponse struct {
-	Command string            `json:"command"`
-	Body    map[string]string `json:"body"`
-}
-
 var playerService *services.PlayerService = services.NewPlayerService(database.GetSQLiteDB())
 
 var playerWebsocket *websocket.Conn
+
+func SetPlayerRoutes(group *echo.Group) {
+	group.GET("/ws", playerWebsocketEndpoint, middlewareFactory.GetSpotifyService())
+	group.GET("/connect", connect, middlewareFactory.GetSpotifyService(), middlewareFactory.BasicAuth())
+}
+
+func connect(c echo.Context) error {
+	accessToken := ""
+	spotifyService := c.Get("spotifyService").(*services.SpotifyService)
+	session, err := playerService.Connect()
+	if err != nil {
+		log.Println("playerService connect error:", err)
+		return err
+	}
+
+	accessToken = session.AccessToken
+	// check if access token is still valid
+	if res, err := spotifyService.CheckAndRefreshApiToken(session.AccessTokenExpiresAt, session.RefreshToken); err != nil {
+		return err
+	} else if res != nil {
+		accessToken = res.AccessToken
+	}
+
+	// return access token
+	return c.JSON(http.StatusOK, pifyHttp.ApiResponse{
+		Data: map[string]string{
+			"access_token": accessToken,
+		},
+	})
+}
 
 func parseWebsocketMessage(c echo.Context, ws *websocket.Conn, msg string) error {
 
@@ -74,10 +96,6 @@ func parseWebsocketMessage(c echo.Context, ws *websocket.Conn, msg string) error
 		return err
 	}
 	return nil
-}
-
-func SetPlayerRoutes(group *echo.Group) {
-	group.GET("/ws", playerWebsocketEndpoint, middlewareFactory.GetSpotifyService())
 }
 
 func playerWebsocketEndpoint(c echo.Context) error {

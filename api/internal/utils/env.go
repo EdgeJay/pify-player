@@ -26,3 +26,11 @@ func GetDBFilename() string {
 func GetCallbackDestination() string {
 	return os.Getenv("CALLBACK_DEST")
 }
+
+func GetBasicAuthUsername() string {
+	return os.Getenv("BASIC_AUTH_USERNAME")
+}
+
+func GetBasicAuthPassword() string {
+	return os.Getenv("BASIC_AUTH_PASSWORD")
+}

@@ -12,6 +12,16 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+type WSCommand struct {
+	Command string
+	Payload map[string]string
+}
+
+type WSResponse struct {
+	Command string            `json:"command"`
+	Body    map[string]string `json:"body"`
+}
+
 type RemoteResponse struct {
 	Success bool `json:"success"`
 }
