@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/edgejay/pify-player/api/internal/database"
 	pifyHttp "github.com/edgejay/pify-player/api/internal/http"
@@ -23,6 +24,8 @@ func SetPlayerRoutes(group *echo.Group) {
 
 func connect(c echo.Context) error {
 	accessToken := ""
+	var expiresAt time.Time
+
 	spotifyService := c.Get("spotifyService").(*services.SpotifyService)
 	session, err := playerService.Connect()
 	if err != nil {
@@ -31,17 +34,20 @@ func connect(c echo.Context) error {
 	}
 
 	accessToken = session.AccessToken
+	expiresAt = session.AccessTokenExpiresAt
 	// check if access token is still valid
 	if res, err := spotifyService.CheckAndRefreshApiToken(session.AccessTokenExpiresAt, session.RefreshToken); err != nil {
 		return err
 	} else if res != nil {
 		accessToken = res.AccessToken
+		expiresAt = time.Now().Add(time.Duration(res.ExpiresIn) * time.Second)
 	}
 
 	// return access token
 	return c.JSON(http.StatusOK, pifyHttp.ApiResponse{
 		Data: map[string]string{
 			"access_token": accessToken,
+			"expires_at":   expiresAt.Format(time.RFC3339),
 		},
 	})
 }

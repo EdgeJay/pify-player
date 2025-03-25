@@ -1,7 +1,19 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { getApiConnectWS, sendConnectCommand, clearSpotifyTokenFromStorage } from '$lib/ws';
+	import {
+		getSpotifyTokenFromStorage,
+		saveSpotifyTokenToStorage,
+		clearSpotifyTokenFromStorage
+	} from '$lib/session';
 	import { controlPlayback } from '$lib/device';
+
+	interface PlayerConnectResponse {
+		data: {
+			access_token: string;
+			expires_at: string;
+		};
+		error_code: string;
+	}
 
 	let { data } = $props();
 	let deviceId = $state('');
@@ -19,6 +31,7 @@
 	let errorMessage = $state('');
 
 	let player: Spotify.Player;
+
 	let token = '';
 
 	const convertToMinutes = (ms: number): string => {
@@ -31,7 +44,36 @@
 		window.onSpotifyWebPlaybackSDKReady = async () => {
 			player = new Spotify.Player({
 				name: data.playerName,
-				getOAuthToken: (cb) => {
+				getOAuthToken: async (cb) => {
+					let tokenExpired = false;
+					let { accessToken, expiresAt } = getSpotifyTokenFromStorage();
+
+					if (expiresAt) {
+						tokenExpired = new Date().getTime() > expiresAt.getTime();
+					}
+
+					if (!accessToken || !expiresAt || tokenExpired) {
+						const domain = window.location.hostname;
+						const response = await fetch(`https://${domain}:8080/api/player/connect`, {
+							method: 'GET',
+							headers: {
+								Authorization: `Basic ${data.basicAuthToken}`
+							}
+						});
+
+						if (!response.ok) {
+							throw new Error('get access token failed');
+						}
+
+						const connectRes = (await response.json()) as PlayerConnectResponse;
+						saveSpotifyTokenToStorage(
+							connectRes.data.access_token,
+							new Date(connectRes.data.expires_at)
+						);
+					} else {
+						token = accessToken;
+					}
+
 					cb(token);
 				},
 				volume: 0.5
@@ -40,6 +82,7 @@
 				can occur, especially in browsers that enforce user interaction before allowing audio/video playback. */
 			player.activateElement();
 
+			/*
 			// establish WebSocket connection
 			const ws = getApiConnectWS({
 				onConnect: (accessToken: string) => {
@@ -56,6 +99,7 @@
 				clearSpotifyTokenFromStorage();
 				sendConnectCommand(ws);
 			};
+			*/
 
 			// Player Ready
 			player.addListener('ready', async ({ device_id }) => {
@@ -86,14 +130,14 @@
 			player.addListener('playback_error', ({ message }) => {
 				errorMessage = message;
 				if (message.includes('token expired')) {
-					refreshAccessToken(ws);
+					// refreshAccessToken(ws);
 				}
 			});
 
 			player.addListener('authentication_error', ({ message }) => {
 				console.log('authentication_error');
 				errorMessage = message;
-				refreshAccessToken(ws);
+				// refreshAccessToken(ws);
 			});
 
 			player.addListener('account_error', ({ message }) => {
@@ -142,6 +186,8 @@
 					}
 				}
 			});
+
+			player.connect();
 		};
 
 		const script = document.createElement('script');
