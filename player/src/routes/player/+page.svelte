@@ -1,19 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import {
-		getSpotifyTokenFromStorage,
-		saveSpotifyTokenToStorage,
-		clearSpotifyTokenFromStorage
-	} from '$lib/session';
+	import { getSpotifyTokenFromStorage } from '$lib/session';
 	import { controlPlayback } from '$lib/device';
-
-	interface PlayerConnectResponse {
-		data: {
-			access_token: string;
-			expires_at: string;
-		};
-		error_code: string;
-	}
+	import { refreshAccessToken } from '$lib/session';
+	import { getTrack } from '$lib/playback';
 
 	let { data } = $props();
 	let deviceId = $state('');
@@ -53,23 +43,8 @@
 					}
 
 					if (!accessToken || !expiresAt || tokenExpired) {
-						const domain = window.location.hostname;
-						const response = await fetch(`https://${domain}:8080/api/player/connect`, {
-							method: 'GET',
-							headers: {
-								Authorization: `Basic ${data.basicAuthToken}`
-							}
-						});
-
-						if (!response.ok) {
-							throw new Error('get access token failed');
-						}
-
-						const connectRes = (await response.json()) as PlayerConnectResponse;
-						saveSpotifyTokenToStorage(
-							connectRes.data.access_token,
-							new Date(connectRes.data.expires_at)
-						);
+						const { accessToken } = await refreshAccessToken(data.basicAuthToken)();
+						token = accessToken;
 					} else {
 						token = accessToken;
 					}
@@ -151,41 +126,58 @@
 
 			let intervalId: NodeJS.Timeout | undefined;
 
-			player.addListener('player_state_changed', ({ paused, track_window: { current_track } }) => {
-				console.log('player_state_changed');
+			player.addListener(
+				'player_state_changed',
+				async ({ paused, track_window: { current_track } }) => {
+					console.log('player_state_changed');
 
-				spotifyTrack = current_track;
-				$state.snapshot(spotifyTrack);
+					spotifyTrack = current_track;
+					// console.log($state.snapshot(spotifyTrack));
 
-				// update song details
-				if (spotifyTrack.album.images.length > 0) {
-					albumImage = spotifyTrack.album.images[0].url;
-				}
-				songTitle = spotifyTrack.name;
-				songArtists = spotifyTrack.artists.reduce((acc, artist) => {
-					acc.push(artist.name);
-					return acc;
-				}, [] as string[]);
+					// update song details
+					if (spotifyTrack.album.images.length > 0) {
+						albumImage = spotifyTrack.album.images[0].url;
+					}
+					songTitle = spotifyTrack.name;
+					songArtists = spotifyTrack.artists.reduce((acc, artist) => {
+						acc.push(artist.name);
+						return acc;
+					}, [] as string[]);
 
-				playbackPaused = paused;
+					playbackPaused = paused;
 
-				if (intervalId) {
-					clearInterval(intervalId);
-				}
-
-				if (!paused) {
-					intervalId = setInterval(async () => {
-						if (!playbackPaused) {
-							await updatePlaybackPosition();
-						}
-					}, 1000);
-				} else {
 					if (intervalId) {
-						// console.log('cleared interval');
 						clearInterval(intervalId);
 					}
+
+					if (!paused) {
+						// get additional track info
+						try {
+							const track = await getTrack(data.basicAuthToken, spotifyTrack?.id || '');
+							console.log(track);
+						} catch (err) {
+							console.error('Error fetching track info:', err);
+							if ((err as Error).message === 'bad_or_expired_token') {
+								await refreshAccessToken(data.basicAuthToken);
+								const track = await getTrack(data.basicAuthToken, spotifyTrack?.id || '');
+								console.log(track);
+							}
+						}
+
+						// start timer to update playback position
+						intervalId = setInterval(async () => {
+							if (!playbackPaused) {
+								await updatePlaybackPosition();
+							}
+						}, 1000);
+					} else {
+						if (intervalId) {
+							// console.log('cleared interval');
+							clearInterval(intervalId);
+						}
+					}
 				}
-			});
+			);
 
 			player.connect();
 		};

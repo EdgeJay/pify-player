@@ -10,6 +10,14 @@ export interface LoginResponse {
 	};
 }
 
+interface PlayerConnectResponse {
+	data: {
+		access_token: string;
+		expires_at: string;
+	};
+	error_code: string;
+}
+
 interface AccessTokenInfo {
 	accessToken: string;
 	expiresAt: Date | null;
@@ -32,6 +40,30 @@ export const checkSession = async (): Promise<LoginResponse> => {
 
 	const res = (await response.json()) as LoginResponse;
 	return res;
+};
+
+export const refreshAccessToken = (basicAuthToken: string): (() => Promise<AccessTokenInfo>) => {
+	return async (): Promise<AccessTokenInfo> => {
+		const domain = window.location.hostname;
+		const response = await fetch(`https://${domain}:8080/api/player/connect`, {
+			method: 'GET',
+			headers: {
+				Authorization: `Basic ${basicAuthToken}`
+			}
+		});
+
+		if (!response.ok) {
+			throw new Error('get access token failed');
+		}
+
+		const connectRes = (await response.json()) as PlayerConnectResponse;
+		saveSpotifyTokenToStorage(connectRes.data.access_token, new Date(connectRes.data.expires_at));
+
+		return {
+			accessToken: connectRes.data.access_token,
+			expiresAt: new Date(connectRes.data.expires_at)
+		};
+	};
 };
 
 export const getSpotifyTokenFromStorage = (): AccessTokenInfo => {

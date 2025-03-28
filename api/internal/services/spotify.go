@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -50,6 +51,12 @@ type SpotifyDevice struct {
 
 type SpotifyDevices struct {
 	Devices []SpotifyDevice `json:"devices"`
+}
+
+type SpotifyTrack struct {
+	ExternalUrls struct {
+		Spotify string `json:"spotify"`
+	} `json:"external_urls"`
 }
 
 type TransferPlaybackRequest struct {
@@ -134,6 +141,10 @@ func (s *SpotifyService) GetApiToken(code string) (*SpotifyTokenResponse, error)
 	}
 
 	return &tokenResJson, nil
+}
+
+func (s *SpotifyService) IsApiTokenExpired(accessTokenExpiresAt time.Time) bool {
+	return time.Now().After(accessTokenExpiresAt)
 }
 
 func (s *SpotifyService) CheckAndRefreshApiToken(accessTokenExpiresAt time.Time, refreshToken string) (*SpotifyTokenResponse, error) {
@@ -253,6 +264,26 @@ func (s *SpotifyService) TransferPlayback(accessToken, deviceId string) (bool, e
 	default:
 		return false, errors.New(pifyErrors.UNKNOWN_ERROR)
 	}
+}
+
+func (s *SpotifyService) GetTrackBytes(accessToken, trackId string) ([]byte, error) {
+	trackReq, err := http.NewRequest("GET", "https://api.spotify.com/v1/tracks/"+trackId, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	trackReq.Header.Set("Authorization", "Bearer "+accessToken)
+	trackRes, err := s.httpClient.Do(trackReq)
+	if err != nil {
+		return nil, err
+	}
+	defer trackRes.Body.Close()
+
+	if trackRes.StatusCode == http.StatusUnauthorized {
+		return nil, errors.New(pifyErrors.BAD_OR_EXPIRED_TOKEN)
+	}
+
+	return io.ReadAll(trackRes.Body)
 }
 
 func (s *SpotifyService) GetScope() []string {
