@@ -57,25 +57,6 @@
 				can occur, especially in browsers that enforce user interaction before allowing audio/video playback. */
 			player.activateElement();
 
-			/*
-			// establish WebSocket connection
-			const ws = getApiConnectWS({
-				onConnect: (accessToken: string) => {
-					token = accessToken;
-					player.connect();
-				},
-				onError: (message) => {
-					errorMessage = message;
-				}
-			});
-
-			const refreshAccessToken = (ws: WebSocket) => {
-				// Clear expired token
-				clearSpotifyTokenFromStorage();
-				sendConnectCommand(ws);
-			};
-			*/
-
 			// Player Ready
 			player.addListener('ready', async ({ device_id }) => {
 				console.log('Ready with Device ID', device_id);
