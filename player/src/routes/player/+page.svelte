@@ -7,6 +7,7 @@
 	// import { getTrack } from '$lib/playback';
 
 	const enableYoutube = false;
+	const defaultVolume = 50;
 
 	type YoutubeSearchListResponse = youtube_v3.Schema$SearchListResponse;
 
@@ -23,6 +24,9 @@
 	let songTitle = $state('');
 	let songArtists = $state<string[]>([]);
 	let songProgress = $state(0);
+	// volume controls
+	let volume = $state(defaultVolume);
+	let isTogglingVolume = $state(false);
 
 	let errorMessage = $state('');
 
@@ -57,7 +61,7 @@
 
 					cb(token);
 				},
-				volume: 0.5
+				volume: volume / 100
 			});
 			/* Activates an HTML element in the player instance. This is typically required before any media playback
 				can occur, especially in browsers that enforce user interaction before allowing audio/video playback. */
@@ -133,6 +137,7 @@
 						}, [] as string[]) || [];
 
 					playbackPaused = paused;
+					await updatePlaybackPosition();
 
 					if (intervalId) {
 						clearInterval(intervalId);
@@ -166,13 +171,13 @@
 								}
 							} catch (err) {
 								/*
-							console.error('Error fetching track info:', err);
-							if ((err as Error).message === 'bad_or_expired_token') {
-								await refreshAccessToken(data.basicAuthToken);
-								const track = await getTrack(data.basicAuthToken, spotifyTrack?.id || '');
-								console.log(track);
-							}
-							*/
+									console.error('Error fetching track info:', err);
+									if ((err as Error).message === 'bad_or_expired_token') {
+										await refreshAccessToken(data.basicAuthToken);
+										const track = await getTrack(data.basicAuthToken, spotifyTrack?.id || '');
+										console.log(track);
+									}
+									*/
 								console.error('Error fetching track info:', err);
 							}
 						}
@@ -185,7 +190,6 @@
 						}, 1000);
 					} else {
 						if (intervalId) {
-							// console.log('cleared interval');
 							clearInterval(intervalId);
 						}
 					}
@@ -195,9 +199,17 @@
 			player.connect();
 		};
 
-		const script = document.createElement('script');
-		script.src = 'https://sdk.scdn.co/spotify-player.js';
-		document.body.appendChild(script);
+		// Check if the Spotify SDK script is already in the document
+		const spotifyScriptExists = document.querySelector(
+			'script[src="https://sdk.scdn.co/spotify-player.js"]'
+		);
+		if (!spotifyScriptExists) {
+			const script = document.createElement('script');
+			script.src = 'https://sdk.scdn.co/spotify-player.js';
+			document.body.appendChild(script);
+		} else if (!player) {
+			window.onSpotifyWebPlaybackSDKReady();
+		}
 	});
 
 	/* Playback controls */
@@ -228,16 +240,30 @@
 			return;
 		}
 		const target = evt.target as HTMLInputElement;
-		console.log(target);
 		if (!target) {
 			return;
 		}
 		const value = parseInt(target.value);
 		player.seek(state.duration * (value / 100));
 	};
+
+	const toggleVolume = () => {
+		isTogglingVolume = !isTogglingVolume;
+	};
+
+	const onVolumeChange = async (evt: Event) => {
+		const target = evt.target as HTMLInputElement;
+		if (!target) {
+			return;
+		}
+		const value = parseInt(target.value);
+		volume = value;
+		player.setVolume(value / 100);
+	};
 </script>
 
 <div class="player-page">
+	<div class="album-bg" style="background-image:url({albumImage})"></div>
 	<div class="video-bg">
 		{#if ytVidId}
 			<iframe
@@ -255,7 +281,9 @@
 		<p>{errorMessage}</p>
 		<div class="panel">
 			<div class="album">
-				<img src={albumImage} alt={songTitle} />
+				{#if albumImage}
+					<img src={albumImage} alt={songTitle} />
+				{/if}
 			</div>
 			<div class="song">
 				<h1>{songTitle}</h1>
@@ -273,27 +301,42 @@
 				<span>{duration}</span>
 			</div>
 			<div class="controls">
-				<button class="sm" aria-label="Volume">
+				<button class="sm" aria-label="Volume" onclick={toggleVolume}>
 					<i class="fa fa-volume-high"></i>
 				</button>
-				<button class="sm" aria-label="Shuffle">
-					<i class="fa fa-shuffle"></i>
-				</button>
-				<button aria-label="Previous" onclick={onPrev}>
-					<i class="fa fa-backward"></i>
-				</button>
-				<button class="play" onclick={onPlay} aria-label="Play">
-					<i class="fa {playbackPaused ? 'fa-play' : 'fa-pause'}"></i>
-				</button>
-				<button aria-label="Next" onclick={onNext}>
-					<i class="fa fa-forward"></i>
-				</button>
-				<button class="sm" aria-label="Repeat">
-					<i class="fa fa-repeat"></i>
-				</button>
-				<button class="sm" aria-label="Playlist">
-					<i class="fa fa-list"></i>
-				</button>
+				{#if isTogglingVolume}
+					<div class="volume-panel">
+						<div class="progress no-margins full-width">
+							<input
+								type="range"
+								step="1"
+								style="--value:{volume};"
+								value={volume}
+								onchange={onVolumeChange}
+							/>
+							<span>{volume}</span>
+						</div>
+					</div>
+				{:else}
+					<button class="sm" aria-label="Shuffle">
+						<i class="fa fa-shuffle"></i>
+					</button>
+					<button aria-label="Previous" onclick={onPrev}>
+						<i class="fa fa-backward"></i>
+					</button>
+					<button class="play" onclick={onPlay} aria-label="Play">
+						<i class="fa {playbackPaused ? 'fa-play' : 'fa-pause'}"></i>
+					</button>
+					<button aria-label="Next" onclick={onNext}>
+						<i class="fa fa-forward"></i>
+					</button>
+					<button class="sm" aria-label="Repeat">
+						<i class="fa fa-repeat"></i>
+					</button>
+					<button class="sm" aria-label="Playlist">
+						<i class="fa fa-list"></i>
+					</button>
+				{/if}
 			</div>
 		</div>
 	</div>
@@ -303,6 +346,20 @@
 	.player-page {
 		position: relative;
 		height: 100vh;
+	}
+
+	.album-bg {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		background-size: cover;
+		background-position: center;
+		background-repeat: no-repeat;
+		z-index: 0;
+		opacity: 0.5;
+		filter: blur(5px);
 	}
 
 	.video-bg {
@@ -322,7 +379,7 @@
 		align-items: center;
 		width: 100%;
 		height: 100%;
-		padding: 50px 20px;
+		padding: 20px;
 		z-index: 20;
 	}
 
@@ -359,6 +416,14 @@
 		margin-bottom: 10px;
 	}
 
+	.volume-panel {
+		display: flex;
+		flex-direction: row;
+		flex: 1;
+		align-items: center;
+		height: 60px;
+	}
+
 	.progress {
 		display: flex;
 		flex-flow: row;
@@ -366,6 +431,14 @@
 		align-items: center;
 		height: 25px;
 		margin-bottom: 20px;
+	}
+
+	.progress.no-margins {
+		margin: 0;
+	}
+
+	.progress.full-width {
+		flex: 1;
 	}
 
 	.progress span {
