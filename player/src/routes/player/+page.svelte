@@ -1,12 +1,18 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import type { youtube_v3 } from 'googleapis';
 	import { getSpotifyTokenFromStorage } from '$lib/session';
 	import { controlPlayback } from '$lib/device';
 	import { refreshAccessToken } from '$lib/session';
-	import { getTrack } from '$lib/playback';
+	// import { getTrack } from '$lib/playback';
+
+	const enableYoutube = false;
+
+	type YoutubeSearchListResponse = youtube_v3.Schema$SearchListResponse;
 
 	let { data } = $props();
 	let deviceId = $state('');
+	let ytVidId = $state('');
 
 	// song track and playback status related vars
 	let spotifyTrack: Spotify.Track | undefined = $state();
@@ -116,14 +122,15 @@
 					// console.log($state.snapshot(spotifyTrack));
 
 					// update song details
-					if (spotifyTrack.album.images.length > 0) {
+					if (spotifyTrack?.album && spotifyTrack.album.images.length > 0) {
 						albumImage = spotifyTrack.album.images[0].url;
 					}
 					songTitle = spotifyTrack.name;
-					songArtists = spotifyTrack.artists.reduce((acc, artist) => {
-						acc.push(artist.name);
-						return acc;
-					}, [] as string[]);
+					songArtists =
+						spotifyTrack?.artists?.reduce((acc, artist) => {
+							acc.push(artist.name);
+							return acc;
+						}, [] as string[]) || [];
 
 					playbackPaused = paused;
 
@@ -132,16 +139,41 @@
 					}
 
 					if (!paused) {
-						// get additional track info
-						try {
-							const track = await getTrack(data.basicAuthToken, spotifyTrack?.id || '');
-							console.log(track);
-						} catch (err) {
+						if (enableYoutube) {
+							// get additional track info and Youtube info
+							try {
+								// const track = await getTrack(data.basicAuthToken, spotifyTrack?.id || '');
+								// console.log(track);
+								console.log('can fetch youtube video', songArtists.length > 0 && songTitle);
+								if (songArtists.length > 0 && songTitle) {
+									const url = new URL('/youtube', window.location.origin);
+									url.searchParams.append(
+										'query',
+										`${spotifyTrack?.artists[0].name} ${spotifyTrack?.name}`
+									);
+									const res = await fetch(url, {
+										method: 'GET',
+										headers: {
+											'Content-Type': 'application/json'
+										}
+									});
+									const vid = (await res.json()) as YoutubeSearchListResponse;
+									if (vid.items && vid.items.length > 0) {
+										ytVidId = vid.items?.[0]?.id?.videoId || '';
+									} else {
+										ytVidId = '';
+									}
+								}
+							} catch (err) {
+								/*
 							console.error('Error fetching track info:', err);
 							if ((err as Error).message === 'bad_or_expired_token') {
 								await refreshAccessToken(data.basicAuthToken);
 								const track = await getTrack(data.basicAuthToken, spotifyTrack?.id || '');
 								console.log(track);
+							}
+							*/
+								console.error('Error fetching track info:', err);
 							}
 						}
 
@@ -189,57 +221,109 @@
 	const onPrev = () => {
 		player.previousTrack();
 	};
+
+	const onSeek = async (evt: Event) => {
+		const state = await player.getCurrentState();
+		if (!state) {
+			return;
+		}
+		const target = evt.target as HTMLInputElement;
+		console.log(target);
+		if (!target) {
+			return;
+		}
+		const value = parseInt(target.value);
+		player.seek(state.duration * (value / 100));
+	};
 </script>
 
-<div class="player">
-	<p>{errorMessage}</p>
-	<div class="panel">
-		<div class="album">
-			<img src={albumImage} alt={songTitle} />
-		</div>
-		<div class="song">
-			<h1>{songTitle}</h1>
-			<p>{songArtists.join(', ')}</p>
-		</div>
-		<div class="progress">
-			<span>{position}</span>
-			<input type="range" step="1" style="--value:{songProgress};" value={songProgress} />
-			<span>{duration}</span>
-		</div>
-		<div class="controls">
-			<button class="sm" aria-label="Volume">
-				<i class="fa fa-volume-high"></i>
-			</button>
-			<button class="sm" aria-label="Shuffle">
-				<i class="fa fa-shuffle"></i>
-			</button>
-			<button aria-label="Previous" onclick={onPrev}>
-				<i class="fa fa-backward"></i>
-			</button>
-			<button class="play" onclick={onPlay} aria-label="Play">
-				<i class="fa {playbackPaused ? 'fa-play' : 'fa-pause'}"></i>
-			</button>
-			<button aria-label="Next" onclick={onNext}>
-				<i class="fa fa-forward"></i>
-			</button>
-			<button class="sm" aria-label="Repeat">
-				<i class="fa fa-repeat"></i>
-			</button>
-			<button class="sm" aria-label="Playlist">
-				<i class="fa fa-list"></i>
-			</button>
+<div class="player-page">
+	<div class="video-bg">
+		{#if ytVidId}
+			<iframe
+				width="100%"
+				height="100%"
+				src={`https://www.youtube.com/embed/${ytVidId}?autoplay=1&controls=0&mute=1&loop=1&start=120&end=180&playlist=${ytVidId}`}
+				title="Background video"
+				frameborder="0"
+				allow="autoplay; clipboard-write; encrypted-media;"
+				style="pointer-events: none;"
+			></iframe>
+		{/if}
+	</div>
+	<div class="player">
+		<p>{errorMessage}</p>
+		<div class="panel">
+			<div class="album">
+				<img src={albumImage} alt={songTitle} />
+			</div>
+			<div class="song">
+				<h1>{songTitle}</h1>
+				<p>{songArtists.join(', ')}</p>
+			</div>
+			<div class="progress">
+				<span>{position}</span>
+				<input
+					type="range"
+					step="1"
+					style="--value:{songProgress};"
+					value={songProgress}
+					onchange={onSeek}
+				/>
+				<span>{duration}</span>
+			</div>
+			<div class="controls">
+				<button class="sm" aria-label="Volume">
+					<i class="fa fa-volume-high"></i>
+				</button>
+				<button class="sm" aria-label="Shuffle">
+					<i class="fa fa-shuffle"></i>
+				</button>
+				<button aria-label="Previous" onclick={onPrev}>
+					<i class="fa fa-backward"></i>
+				</button>
+				<button class="play" onclick={onPlay} aria-label="Play">
+					<i class="fa {playbackPaused ? 'fa-play' : 'fa-pause'}"></i>
+				</button>
+				<button aria-label="Next" onclick={onNext}>
+					<i class="fa fa-forward"></i>
+				</button>
+				<button class="sm" aria-label="Repeat">
+					<i class="fa fa-repeat"></i>
+				</button>
+				<button class="sm" aria-label="Playlist">
+					<i class="fa fa-list"></i>
+				</button>
+			</div>
 		</div>
 	</div>
 </div>
 
 <style>
+	.player-page {
+		position: relative;
+		height: 100vh;
+	}
+
+	.video-bg {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		z-index: 1;
+	}
+
 	.player {
+		position: absolute;
 		display: flex;
 		flex-direction: column;
 		justify-content: flex-end;
 		align-items: center;
+		width: 100%;
 		height: 100%;
 		padding: 50px 20px;
+		z-index: 20;
 	}
 
 	.panel {

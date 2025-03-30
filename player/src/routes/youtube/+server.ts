@@ -23,6 +23,7 @@ async function searchVideos(query: string, maxResults = 1) {
 			}
 		);
 
+		/*
 		response.data.items?.forEach((item) => {
 			const { title, description, publishedAt } = item.snippet || {};
 			const videoId = item?.id?.videoId;
@@ -33,8 +34,8 @@ async function searchVideos(query: string, maxResults = 1) {
 			console.log(`URL: https://www.youtube.com/watch?v=${videoId}`);
 			console.log('---------------------------------------------');
 		});
-
-		return response;
+		*/
+		return response.data;
 	} catch (error) {
 		console.error('Error fetching videos:', error);
 	}
