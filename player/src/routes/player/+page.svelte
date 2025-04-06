@@ -253,7 +253,7 @@
 			<iframe
 				width="100%"
 				height="100%"
-				src={`https://www.youtube.com/embed/${ytVidId}?autoplay=1&controls=0&mute=1&loop=1&start=120&end=180&playlist=${ytVidId}`}
+				src={`https://www.youtube.com/embed/${ytVidId}?autoplay=1&controls=0&mute=1&loop=1`}
 				title="Background video"
 				frameborder="0"
 				allow="autoplay; clipboard-write; encrypted-media;"
