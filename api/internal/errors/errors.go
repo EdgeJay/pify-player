@@ -20,4 +20,5 @@ const (
 	RATE_LIMIT_EXCEEDED         = "rate_limit_exceeded"
 	GET_TRACK_FAILED            = "get_track_failed"
 	PARSE_TRACK_RESPONSE_FAILED = "parse_track_response_failed"
+	NO_YOUTUBE_VIDEO_FOUND      = "no_youtube_video_found"
 )

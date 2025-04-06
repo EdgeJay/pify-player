@@ -13,6 +13,10 @@ type LoginResponse struct {
 	ErrorCode   string       `json:"error_code"`
 }
 
+type YoutubeVideoResponse struct {
+	VideoId string `json:"video_id"`
+}
+
 type ApiResponse struct {
 	Data      interface{} `json:"data"`
 	ErrorCode string      `json:"error_code"`

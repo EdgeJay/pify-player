@@ -34,3 +34,7 @@ func GetBasicAuthUsername() string {
 func GetBasicAuthPassword() string {
 	return os.Getenv("BASIC_AUTH_PASSWORD")
 }
+
+func GetYoutubeApiKey() string {
+	return os.Getenv("YOUTUBE_API_KEY")
+}

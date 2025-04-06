@@ -18,6 +18,12 @@ const (
 	PLAYER_STATE_CONNECTED    = "connected"
 )
 
+type TrackMediaType string
+
+const (
+	TRACK_MEDIA_TYPE_YOUTUBE TrackMediaType = "youtube"
+)
+
 type PlayerService struct {
 	db    *database.SQLiteDB
 	cache *ristretto.Cache[string, string]
@@ -78,4 +84,35 @@ func (s *PlayerService) Connect() (*models.UserSession, error) {
 	s.cache.Wait()
 
 	return session, nil
+}
+
+func (s *PlayerService) GetTrackMedia(spotifyTrackId string, mediaType TrackMediaType) *models.TrackMedia {
+	trackMedia := &models.TrackMedia{}
+
+	err := s.db.Bun.NewSelect().
+		Model(trackMedia).
+		Where("spotify_track_id = ? AND media_type = ?", spotifyTrackId, mediaType).
+		Scan(context.Background())
+
+	if err != nil {
+		return nil
+	}
+
+	return trackMedia
+}
+
+func (s *PlayerService) SaveTrackMedia(spotifyTrackId, mediaId string, mediaType TrackMediaType) error {
+	_, err := s.db.Bun.NewInsert().
+		Model(&models.TrackMedia{
+			SpotifyTrackId: spotifyTrackId,
+			MediaId:        mediaId,
+			MediaType:      string(mediaType),
+		}).
+		Exec(context.Background())
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
