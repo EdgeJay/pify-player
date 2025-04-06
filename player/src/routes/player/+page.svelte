@@ -4,9 +4,8 @@
 	import { getSpotifyTokenFromStorage } from '$lib/session';
 	import { controlPlayback } from '$lib/device';
 	import { refreshAccessToken } from '$lib/session';
-	// import { getTrack } from '$lib/playback';
+	import { getAndSaveYoutubeVideo } from '$lib/playback';
 
-	const enableYoutube = false;
 	const defaultVolume = 50;
 
 	type YoutubeSearchListResponse = youtube_v3.Schema$SearchListResponse;
@@ -120,6 +119,10 @@
 			player.addListener(
 				'player_state_changed',
 				async ({ paused, track_window: { current_track } }) => {
+					const stateChanged =
+						spotifyTrack?.id !== current_track?.id ||
+						(spotifyTrack?.id === current_track?.id && playbackPaused !== paused);
+
 					console.log('player_state_changed');
 
 					spotifyTrack = current_track;
@@ -137,60 +140,41 @@
 						}, [] as string[]) || [];
 
 					playbackPaused = paused;
+
 					await updatePlaybackPosition();
 
 					if (intervalId) {
 						clearInterval(intervalId);
 					}
 
-					if (!paused) {
-						if (enableYoutube) {
-							// get additional track info and Youtube info
-							try {
-								// const track = await getTrack(data.basicAuthToken, spotifyTrack?.id || '');
-								// console.log(track);
-								console.log('can fetch youtube video', songArtists.length > 0 && songTitle);
-								if (songArtists.length > 0 && songTitle) {
-									const url = new URL('/youtube', window.location.origin);
-									url.searchParams.append(
-										'query',
-										`${spotifyTrack?.artists[0].name} ${spotifyTrack?.name}`
-									);
-									const res = await fetch(url, {
-										method: 'GET',
-										headers: {
-											'Content-Type': 'application/json'
-										}
-									});
-									const vid = (await res.json()) as YoutubeSearchListResponse;
-									if (vid.items && vid.items.length > 0) {
-										ytVidId = vid.items?.[0]?.id?.videoId || '';
-									} else {
-										ytVidId = '';
-									}
-								}
-							} catch (err) {
-								/*
-									console.error('Error fetching track info:', err);
-									if ((err as Error).message === 'bad_or_expired_token') {
-										await refreshAccessToken(data.basicAuthToken);
-										const track = await getTrack(data.basicAuthToken, spotifyTrack?.id || '');
-										console.log(track);
-									}
-									*/
-								console.error('Error fetching track info:', err);
-							}
-						}
-
+					if (!playbackPaused) {
 						// start timer to update playback position
 						intervalId = setInterval(async () => {
 							if (!playbackPaused) {
 								await updatePlaybackPosition();
 							}
 						}, 1000);
-					} else {
-						if (intervalId) {
-							clearInterval(intervalId);
+					}
+
+					if (stateChanged && data.enableYoutube) {
+						console.log('fetch youtube video');
+						// get additional track info and Youtube info
+						try {
+							// const track = await getTrack(data.basicAuthToken, spotifyTrack?.id || '');
+							// console.log(track);
+
+							const trackId = spotifyTrack?.id || '';
+							console.log('can fetch youtube video', songArtists.length > 0 && songTitle);
+							if (trackId) {
+								const res = await getAndSaveYoutubeVideo(
+									data.basicAuthToken,
+									`${spotifyTrack?.artists[0].name} ${spotifyTrack?.name}`,
+									trackId
+								);
+								ytVidId = res?.data?.video_id || '';
+							}
+						} catch (err) {
+							console.error('Error fetching track info:', err);
 						}
 					}
 				}

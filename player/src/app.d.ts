@@ -7,6 +7,12 @@ declare global {
 		// interface PageData {}
 		// interface PageState {}
 		// interface Platform {}
+
+		interface YoutubeVideoResponse {
+			data: {
+				video_id: string;
+			};
+		}
 	}
 }
 
