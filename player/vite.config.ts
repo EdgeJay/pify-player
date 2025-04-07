@@ -4,6 +4,15 @@ import { svelteTesting } from '@testing-library/svelte/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, loadEnv } from 'vite';
 
+const getHttpsCert = (mode: string) => {
+	const env = loadEnv(mode, process.cwd());
+	const certPath = env.VITE_CERT_PATH || './certs';
+	return {
+		key: fs.readFileSync(`${certPath}/${env.VITE_DOMAIN}.key.pem`),
+		cert: fs.readFileSync(`${certPath}/${env.VITE_DOMAIN}.pem`)
+	};
+};
+
 export default defineConfig(({ mode }) => {
 	const env = loadEnv(mode, process.cwd());
 	let allowedHosts: string[] = [];
@@ -44,10 +53,7 @@ export default defineConfig(({ mode }) => {
 		},
 
 		server: {
-			https: {
-				key: fs.readFileSync(`./certs/${env.VITE_DOMAIN}.key.pem`),
-				cert: fs.readFileSync(`./certs/${env.VITE_DOMAIN}.pem`)
-			},
+			https: getHttpsCert(mode),
 			allowedHosts,
 			hmr: {
 				clientPort: 5173
