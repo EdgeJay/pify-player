@@ -7,11 +7,14 @@ generate-ssl:
 start:
 	@docker compose -f docker-compose.yml up --build
 
+start-bg:
+	@docker compose -f docker-compose.yml up --build --detach
+
 start-dev:
 	@docker compose -f docker-compose.dev.yml up --build
 
 start-dev-bg:
-	@docker compose -f docker-compose.dev.yml up --detach
+	@docker compose -f docker-compose.dev.yml up --build --detach
 
 destroy:
 	@docker compose -f docker-compose.yml down --rmi all

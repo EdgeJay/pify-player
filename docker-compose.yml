@@ -4,11 +4,14 @@ services:
       context: ./player
       dockerfile: Dockerfile
     container_name: pify-player-frontend
+    ports:
+      - "3000:3000"
     volumes:
       - ./certs:/app/certs
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
+    depends_on:
+      - api
+    env_file:
+      - ./player/.env.prod
     networks:
       - pify-player-network
 
@@ -18,16 +21,12 @@ services:
       dockerfile: Dockerfile
     container_name: pify-player-api
     ports:
-      - "8080:8080"
+      - "8080:443"
     volumes:
       - ./certs:/app/certs
       - ./api/database:/app/database
     env_file:
       - ./api/.env.prod
-    environment:
-      - PORT=8080
-      - CORS_ORIGINS=https://huijie-mbp.local
-      - SSL_DOMAIN=huijie-mbp.local
     networks:
       - pify-player-network
 
