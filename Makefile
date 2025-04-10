@@ -5,7 +5,7 @@ generate-ssl:
 	@chmod +x ./scripts/setup-ssl.sh && ./scripts/setup-ssl.sh -d $(SSL_DOMAIN)
 
 copy-certs:
-	@cp -r ./certs ./api/certs && cp -r ./certs ./player/certs
+	@cp -r ./certs/ ./api/certs && cp -r ./certs/ ./player/certs
 
 start: copy-certs
 	@docker compose -f docker-compose.yml up --build
