@@ -4,16 +4,19 @@ export
 generate-ssl:
 	@chmod +x ./scripts/setup-ssl.sh && ./scripts/setup-ssl.sh -d $(SSL_DOMAIN)
 
-start:
+copy-certs:
+	@cp -r ./certs ./api/certs && cp -r ./certs ./player/certs
+
+start: copy-certs
 	@docker compose -f docker-compose.yml up --build
 
-start-bg:
+start-bg: copy-certs
 	@docker compose -f docker-compose.yml up --build --detach
 
-start-dev:
+start-dev: copy-certs
 	@docker compose -f docker-compose.dev.yml up --build
 
-start-dev-bg:
+start-dev-bg: copy-certs
 	@docker compose -f docker-compose.dev.yml up --build --detach
 
 destroy:

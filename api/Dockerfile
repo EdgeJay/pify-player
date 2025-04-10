@@ -21,6 +21,7 @@ WORKDIR /app
 
 # Copy the built Go binary from the builder stage
 COPY --from=builder /app/pify-player-api .
+COPY --from=builder /app/certs/ ./certs
 
 # Set the timezone and install CA certificates
 RUN apk --no-cache add ca-certificates tzdata

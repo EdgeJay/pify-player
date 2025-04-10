@@ -6,12 +6,10 @@ services:
     container_name: pify-player-frontend
     ports:
       - "3000:3000"
-    volumes:
-      - ./certs:/app/certs
     depends_on:
       - api
     env_file:
-      - ./player/.env.prod
+      - ./player/.env.production
     networks:
       - pify-player-network
 
@@ -23,7 +21,6 @@ services:
     ports:
       - "8080:443"
     volumes:
-      - ./certs:/app/certs
       - ./api/database:/app/database
     env_file:
       - ./api/.env.prod
