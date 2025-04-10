@@ -11,7 +11,7 @@ start: copy-certs
 	@docker compose -f docker-compose.yml up --build
 
 start-bg: copy-certs
-	@docker compose -f docker-compose.yml up --build --detach
+	@docker compose -f docker-compose.yml up --detach
 
 start-dev: copy-certs
 	@docker compose -f docker-compose.dev.yml up --build
