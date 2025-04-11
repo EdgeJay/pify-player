@@ -19,4 +19,4 @@ sleep 5
 DISPLAY=:0 chromium-browser --noerrdialogs \
   --disable-infobars --no-first-run --ozone-platform=wayland \
   --enable-features=OverlayScrollbar --start-maximized --kiosk \
-  --no-user-gesture-required https://workbench-rpi.local:3000/player > /home/workbench-rpi-admin/repos/pify-player/scripts/logs.chromium.txt 2>&1
+  --no-user-gesture-required https://workbench-rpi.local:5173/player > /home/workbench-rpi-admin/repos/pify-player/scripts/logs.chromium.txt 2>&1
