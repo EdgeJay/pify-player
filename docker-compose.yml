@@ -5,7 +5,7 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./player/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./player/nginx/nginx.prod.conf:/etc/nginx/nginx.conf
       - ./certs:/etc/ssl/private
     depends_on:
       - frontend
