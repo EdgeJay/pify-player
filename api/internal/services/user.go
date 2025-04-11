@@ -46,13 +46,13 @@ func (s *UserService) SaveUser(spotifyUser *SpotifyUser) (*models.User, error) {
 		return nil, err
 	}
 
+	profileImageUrl := ""
+	if len(spotifyUser.Images) > 0 {
+		profileImageUrl = spotifyUser.Images[0].Url
+	}
+
 	// Update existing user record if found
 	if user != nil && user.Id > 0 {
-		profileImageUrl := ""
-		if len(spotifyUser.Images) > 0 {
-			profileImageUrl = spotifyUser.Images[0].Url
-		}
-
 		_, err := s.db.Bun.NewUpdate().
 			Model((*models.User)(nil)).
 			Set("display_name = ?", spotifyUser.DisplayName).
@@ -69,7 +69,7 @@ func (s *UserService) SaveUser(spotifyUser *SpotifyUser) (*models.User, error) {
 			Model(&models.User{
 				Username:        spotifyUser.Id,
 				DisplayName:     spotifyUser.DisplayName,
-				ProfileImageUrl: spotifyUser.Images[0].Url,
+				ProfileImageUrl: profileImageUrl,
 				DeletedAt:       nil,
 			}).
 			Exec(context.Background())
