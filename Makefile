@@ -11,13 +11,13 @@ build: copy-certs
 	@docker compose -f docker-compose.yml build
 
 start:
-	@docker compose -f docker-compose.yml run -d
+	@docker compose -f docker-compose.yml up -d
 
 start-dev: copy-certs
 	@docker compose -f docker-compose.dev.yml up --build
 
 start-dev-bg: copy-certs
-	@docker compose -f docker-compose.dev.yml up --build --detach
+	@docker compose -f docker-compose.dev.yml up --build -d
 
 destroy:
 	@docker compose -f docker-compose.yml down --rmi all

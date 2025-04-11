@@ -1,8 +1,31 @@
 services:
+  nginx:
+    image: nginx:latest
+    container_name: pify-player-nginx
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./player/nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./certs:/etc/ssl/private
+    depends_on:
+      - frontend
+      - api
+    networks:
+      - pify-player-network
   frontend:
     build:
       context: ./player
       dockerfile: Dockerfile
+      args:
+        - NODE_ENV
+        - VITE_CERT_PATH
+        - VITE_ALLOWED_SERVERS
+        - VITE_DOMAIN
+        - PLAYER_NAME
+        - BASIC_AUTH_USERNAME
+        - BASIC_AUTH_PASSWORD
+        - ENABLE_YOUTUBE
+        - YOUTUBE_API_KEY
     container_name: pify-player-frontend
     ports:
       - "3000:3000"

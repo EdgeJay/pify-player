@@ -13,7 +13,7 @@ type ServerSettings struct {
 
 func GetServerSettings() ServerSettings {
 	return ServerSettings{
-		Port:        os.Getenv("PORT"),
+		Port:        os.Getenv("SERVER_PORT"),
 		CorsOrigins: strings.Split(os.Getenv("CORS_ORIGINS"), ","),
 		SslDomain:   os.Getenv("SSL_DOMAIN"),
 	}
