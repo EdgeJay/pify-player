@@ -4,7 +4,6 @@ WORKDIR /app
 
 COPY . .
 RUN ls -al ./certs
-RUN cp -f .env.production .env
 RUN npm install
 RUN npm run build
 

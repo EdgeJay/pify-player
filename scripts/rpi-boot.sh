@@ -4,7 +4,7 @@
 # Create a unit file under /lib/systemd/system/sample.service
 # Reference: https://www.dexterindustries.com/howto/run-a-program-on-your-raspberry-pi-at-startup/
 
-cd /home/workbench-rpi-admin/repos/pify-player && make start-bg
+cd /home/workbench-rpi-admin/repos/pify-player && make start
 
 until [ "`docker inspect -f {{.State.Running}} pify-player-api`"=="true" ]; do
     sleep 0.5;

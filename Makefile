@@ -1,4 +1,4 @@
-include .env ./api/.env
+include .env
 export
 
 generate-ssl:
@@ -7,11 +7,11 @@ generate-ssl:
 copy-certs:
 	@cp -r ./certs/ ./api/certs && cp -r ./certs/ ./player/certs
 
-start: copy-certs
-	@docker compose -f docker-compose.yml up --build
+build: copy-certs
+	@docker compose -f docker-compose.yml build
 
-start-bg: copy-certs
-	@docker compose -f docker-compose.yml up --detach
+start:
+	@docker compose -f docker-compose.yml run -d
 
 start-dev: copy-certs
 	@docker compose -f docker-compose.dev.yml up --build

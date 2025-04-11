@@ -9,7 +9,7 @@ services:
     depends_on:
       - api
     env_file:
-      - ./player/.env.production
+      - .env
     networks:
       - pify-player-network
 
@@ -23,7 +23,7 @@ services:
     volumes:
       - ./api/database:/app/database
     env_file:
-      - ./api/.env.prod
+      - .env
     networks:
       - pify-player-network
 
