@@ -3,6 +3,16 @@ services:
     build:
       context: ./player
       dockerfile: dev.Dockerfile
+      args:
+        - NODE_ENV
+        - VITE_CERT_PATH
+        - VITE_ALLOWED_SERVERS
+        - VITE_DOMAIN
+        - PLAYER_NAME
+        - BASIC_AUTH_USERNAME
+        - BASIC_AUTH_PASSWORD
+        - ENABLE_YOUTUBE
+        - YOUTUBE_API_KEY
     container_name: pify-player-frontend
     ports:
       - "5173:5173"
