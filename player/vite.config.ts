@@ -4,8 +4,7 @@ import { svelteTesting } from '@testing-library/svelte/vite';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, loadEnv } from 'vite';
 
-const getHttpsCert = (mode: string) => {
-	const env = loadEnv(mode, process.cwd());
+const getHttpsCert = (env: Record<string, string>) => {
 	const certPath = env.VITE_CERT_PATH || './certs';
 	return {
 		key: fs.readFileSync(`${certPath}/${env.VITE_DOMAIN}.key.pem`),
@@ -53,7 +52,7 @@ export default defineConfig(({ mode }) => {
 		},
 
 		server: {
-			https: getHttpsCert(mode),
+			https: getHttpsCert(env),
 			allowedHosts,
 			hmr: {
 				clientPort: 5173
