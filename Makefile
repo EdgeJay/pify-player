@@ -31,6 +31,9 @@ migration-create-go:
 migration-create-sql:
 	@cd api && DB_FILE=$(DB_FILE) go run ./cmd/migrations/main.go db create_sql $(name)
 
+migrate-init:
+	@cd api && DB_FILE=$(DB_FILE) go run ./cmd/migrations/main.go db init
+
 migrate:
 	@cd api && DB_FILE=$(DB_FILE) go run ./cmd/migrations/main.go db migrate
 
