@@ -2,11 +2,11 @@ package services
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 
 	"github.com/edgejay/pify-player/api/internal/database"
 	"github.com/edgejay/pify-player/api/internal/database/models"
+	pifyErrors "github.com/edgejay/pify-player/api/internal/errors"
 	"github.com/uptrace/bun"
 
 	"github.com/dgraph-io/ristretto/v2"
@@ -72,12 +72,9 @@ func (s *PlayerService) Connect() (*models.UserSession, error) {
 		Scan(context.Background())
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			s.cache.Set("player_state", PLAYER_STATE_WAITING, 1)
-			s.cache.Wait()
-			return nil, nil
-		}
-		return nil, err
+		s.cache.Set("player_state", PLAYER_STATE_WAITING, 1)
+		s.cache.Wait()
+		return nil, errors.New(pifyErrors.INVALID_SESSION)
 	}
 
 	s.cache.Set("player_state", PLAYER_STATE_CONNECTED, 1)

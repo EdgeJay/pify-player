@@ -23,7 +23,7 @@
 
 				// get all devices
 				devices = (await getAllDevices()).data.devices;
-				console.log(devices);
+				console.log($state.snapshot(devices));
 			}
 		} catch (err) {
 			console.error(err);

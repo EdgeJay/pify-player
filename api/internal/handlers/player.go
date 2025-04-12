@@ -35,6 +35,11 @@ func connect(c echo.Context) error {
 
 	session, err := playerService.Connect()
 	if err != nil {
+		if err.Error() == errors.INVALID_SESSION {
+			return c.JSON(http.StatusUnauthorized, pifyHttp.ApiResponse{
+				ErrorCode: errors.INVALID_SESSION,
+			})
+		}
 		log.Println("playerService connect error:", err)
 		return err
 	}

@@ -5,6 +5,7 @@
 	import { controlPlayback } from '$lib/device';
 	import { refreshAccessToken } from '$lib/session';
 	import { getAndSaveYoutubeVideo } from '$lib/playback';
+	import LoginDialog from './components/login.svelte';
 
 	const defaultVolume = 50;
 
@@ -27,7 +28,11 @@
 	let volume = $state(defaultVolume);
 	let isTogglingVolume = $state(false);
 
+	// error message shown to user
 	let errorMessage = $state('');
+
+	// login dialog
+	let isConnected = $state(true);
 
 	let player: Spotify.Player;
 
@@ -52,9 +57,17 @@
 					}
 
 					if (!accessToken || !expiresAt || tokenExpired) {
-						const { accessToken } = await refreshAccessToken(data.basicAuthToken)();
-						token = accessToken;
+						try {
+							const { accessToken } = await refreshAccessToken(data.basicAuthToken)();
+							token = accessToken;
+						} catch (err) {
+							console.error('Error refreshing access token:', err);
+							// show login dialog with QR code
+							isConnected = false;
+							return;
+						}
 					} else {
+						isConnected = true;
 						token = accessToken;
 					}
 
@@ -324,6 +337,9 @@
 			</div>
 		</div>
 	</div>
+	{#if !isConnected}
+		<LoginDialog basicAuthToken={data.basicAuthToken} />
+	{/if}
 </div>
 
 <style>
