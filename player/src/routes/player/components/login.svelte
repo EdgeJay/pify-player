@@ -5,8 +5,15 @@
 		basicAuthToken: string;
 	}
 
+	interface LoginQRResponse {
+		data: {
+			qr: string;
+		};
+	}
+
 	let { basicAuthToken }: Props = $props();
 	let isLoading = $state(true);
+	let imageDataUrl = $state('');
 
 	onMount(async () => {
 		// get login QR code
@@ -21,6 +28,10 @@
 		if (!response.ok) {
 			throw new Error('get login QR failed');
 		}
+
+		const data = (await response.json()) as LoginQRResponse;
+		imageDataUrl = data.data.qr;
+		isLoading = false;
 	});
 </script>
 
@@ -28,6 +39,9 @@
 	<div class="login-panel">
 		{#if isLoading}
 			<i class="fa fa-circle-notch"></i>
+		{:else}
+			<img src={imageDataUrl} alt="Login QR Code" />
+			<button>Refresh</button>
 		{/if}
 	</div>
 </div>
@@ -52,7 +66,7 @@
 		transform: translate(-50%, -50%);
 		background-color: white;
 		color: #585858;
-		padding: 10px 20px;
+		padding: 20px;
 		border-radius: 8px;
 		box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 		z-index: 101;

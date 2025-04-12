@@ -1,7 +1,9 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -13,6 +15,7 @@ import (
 	"github.com/edgejay/pify-player/api/internal/services"
 	"github.com/edgejay/pify-player/api/internal/utils"
 	"github.com/labstack/echo/v4"
+	"github.com/skip2/go-qrcode"
 
 	"google.golang.org/api/option"
 	"google.golang.org/api/youtube/v3"
@@ -24,6 +27,7 @@ func SetPlayerRoutes(group *echo.Group) {
 	group.GET("/connect", connect, middlewareFactory.GetUserService(), middlewareFactory.GetSpotifyService(), middlewareFactory.BasicAuth())
 	group.GET("/track/:id", getTrack, middlewareFactory.GetSpotifyService(), middlewareFactory.BasicAuth())
 	group.POST("/youtube", getAndSaveYoutubeVideo, middlewareFactory.GetSpotifyService(), middlewareFactory.BasicAuth())
+	group.GET("/login-qr", getLoginQR, middlewareFactory.BasicAuth())
 }
 
 func connect(c echo.Context) error {
@@ -182,6 +186,34 @@ func getAndSaveYoutubeVideo(c echo.Context) error {
 	return c.JSON(http.StatusOK, pifyHttp.ApiResponse{
 		Data: pifyHttp.YoutubeVideoResponse{
 			VideoId: videoId,
+		},
+	})
+}
+
+func getLoginQR(c echo.Context) error {
+	loginUrl := utils.GetCallbackDestination()
+
+	qrCode, err := qrcode.New(loginUrl, qrcode.Medium)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, pifyHttp.ApiResponse{
+			ErrorCode: errors.LOGIN_QR_UNAVAILABLE,
+		})
+	}
+
+	var buf bytes.Buffer
+	err = qrCode.Write(256, &buf)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, pifyHttp.ApiResponse{
+			ErrorCode: errors.LOGIN_QR_UNAVAILABLE,
+		})
+	}
+
+	base64Data := base64.StdEncoding.EncodeToString(buf.Bytes())
+	dataURL := "data:image/png;base64," + base64Data
+
+	return c.JSON(http.StatusOK, pifyHttp.ApiResponse{
+		Data: map[string]string{
+			"qr": dataURL,
 		},
 	})
 }

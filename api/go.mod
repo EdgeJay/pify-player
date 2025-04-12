@@ -6,6 +6,7 @@ require (
 	github.com/dgraph-io/ristretto/v2 v2.1.0
 	github.com/google/uuid v1.6.0
 	github.com/labstack/echo/v4 v4.13.3
+	github.com/skip2/go-qrcode v0.0.0-20200617195104-da1b6568686e
 	github.com/uptrace/bun v1.2.10
 	github.com/uptrace/bun/dialect/sqlitedialect v1.2.10
 	github.com/uptrace/bun/driver/sqliteshim v1.2.10
