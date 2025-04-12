@@ -33,6 +33,10 @@
 		imageDataUrl = data.data.qr;
 		isLoading = false;
 	});
+
+	const onRefreshButton = () => {
+		window.location.reload();
+	};
 </script>
 
 <div class="login-dialog">
@@ -41,7 +45,7 @@
 			<i class="fa fa-circle-notch"></i>
 		{:else}
 			<img src={imageDataUrl} alt="Login QR Code" />
-			<button>Refresh</button>
+			<button onclick={onRefreshButton}>Refresh</button>
 		{/if}
 	</div>
 </div>
