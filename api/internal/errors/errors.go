@@ -7,6 +7,7 @@ const (
 	GET_USER_INFO_FAILED       = "get_user_info_failed"
 	SAVE_USER_INFO_FAILED      = "save_user_info_failed"
 	GENERATE_SESSION_ID_FAILED = "generate_session_id_failed"
+	GET_SESSION_FAILED         = "get_session_failed"
 	SAVE_SESSION_FAILED        = "save_session_failed"
 )
 
@@ -23,4 +24,5 @@ const (
 	GET_TRACK_FAILED            = "get_track_failed"
 	PARSE_TRACK_RESPONSE_FAILED = "parse_track_response_failed"
 	NO_YOUTUBE_VIDEO_FOUND      = "no_youtube_video_found"
+	UNABLE_TO_SET_CONTROLLER    = "unable_to_set_controller"
 )

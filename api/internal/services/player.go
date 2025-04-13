@@ -8,8 +8,6 @@ import (
 	"github.com/edgejay/pify-player/api/internal/database/models"
 	pifyErrors "github.com/edgejay/pify-player/api/internal/errors"
 	"github.com/uptrace/bun"
-
-	"github.com/dgraph-io/ristretto/v2"
 )
 
 const (
@@ -25,44 +23,17 @@ const (
 )
 
 type PlayerService struct {
-	db    *database.SQLiteDB
-	cache *ristretto.Cache[string, string]
+	db *database.SQLiteDB
 }
 
 func NewPlayerService(db *database.SQLiteDB) *PlayerService {
-	cache, err := ristretto.NewCache(&ristretto.Config[string, string]{
-		NumCounters: 1e7,     // number of keys to track frequency of (10M).
-		MaxCost:     1 << 30, // maximum cost of cache (1GB).
-		BufferItems: 64,      // number of keys per Get buffer.
-	})
-
-	if err != nil {
-		panic(err)
-	}
-
-	ps := &PlayerService{db, cache}
-	ps.initialize()
-
+	ps := &PlayerService{db}
 	return ps
 }
 
-func (s *PlayerService) initialize() {
-	s.cache.Set("player_state", PLAYER_STATE_DISCONNECTED, 1)
-	s.cache.Wait()
-}
-
-func (s *PlayerService) GetPlayerState() string {
-	state, found := s.cache.Get("player_state")
-	if !found {
-		panic(errors.New("missing player state in cache"))
-	}
-	return state
-}
-
-func (s *PlayerService) Connect() (*models.UserSession, error) {
+func (s *PlayerService) GetControllerSession() (*models.UserSession, error) {
 	// fetch session
 	session := &models.UserSession{}
-
 	err := s.db.Bun.NewSelect().
 		Model(session).
 		Relation("User", func(sq *bun.SelectQuery) *bun.SelectQuery {
@@ -72,13 +43,9 @@ func (s *PlayerService) Connect() (*models.UserSession, error) {
 		Scan(context.Background())
 
 	if err != nil {
-		s.cache.Set("player_state", PLAYER_STATE_WAITING, 1)
-		s.cache.Wait()
+		// no session or session with controller privileges found
 		return nil, errors.New(pifyErrors.INVALID_SESSION)
 	}
-
-	s.cache.Set("player_state", PLAYER_STATE_CONNECTED, 1)
-	s.cache.Wait()
 
 	return session, nil
 }

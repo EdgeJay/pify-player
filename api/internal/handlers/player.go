@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/edgejay/pify-player/api/internal/database"
+	"github.com/edgejay/pify-player/api/internal/database/models"
 	"github.com/edgejay/pify-player/api/internal/errors"
 	pifyHttp "github.com/edgejay/pify-player/api/internal/http"
 	"github.com/edgejay/pify-player/api/internal/services"
@@ -24,20 +25,21 @@ import (
 var playerService *services.PlayerService = services.NewPlayerService(database.GetSQLiteDB())
 
 func SetPlayerRoutes(group *echo.Group) {
-	group.GET("/connect", connect, middlewareFactory.GetUserService(), middlewareFactory.GetSpotifyService(), middlewareFactory.BasicAuth())
+	group.GET("/connect", getConnectStatus, middlewareFactory.GetUserService(), middlewareFactory.GetSpotifyService(), middlewareFactory.BasicAuth())
+	group.POST("/connect", postConnect, middlewareFactory.Auth(), middlewareFactory.GetUserService())
 	group.GET("/track/:id", getTrack, middlewareFactory.GetSpotifyService(), middlewareFactory.BasicAuth())
 	group.POST("/youtube", getAndSaveYoutubeVideo, middlewareFactory.GetSpotifyService(), middlewareFactory.BasicAuth())
 	group.GET("/login-qr", getLoginQR, middlewareFactory.BasicAuth())
 }
 
-func connect(c echo.Context) error {
+func getConnectStatus(c echo.Context) error {
 	accessToken := ""
 	var expiresAt time.Time
 
 	spotifyService := c.Get("spotifyService").(*services.SpotifyService)
 	userService := c.Get("userService").(*services.UserService)
 
-	session, err := playerService.Connect()
+	session, err := playerService.GetControllerSession()
 	if err != nil {
 		if err.Error() == errors.INVALID_SESSION {
 			return c.JSON(http.StatusUnauthorized, pifyHttp.ApiResponse{
@@ -76,10 +78,44 @@ func connect(c echo.Context) error {
 	})
 }
 
+func postConnect(c echo.Context) error {
+	session := c.Get("session").(*models.UserSession)
+	userService := c.Get("userService").(*services.UserService)
+
+	// set user session as controller
+	if _, err := userService.SetSessionAsController(session.Uuid); err != nil {
+		log.Println("set session as controller error:", err)
+		return c.JSON(http.StatusBadRequest, pifyHttp.ApiResponse{
+			ErrorCode: errors.UNABLE_TO_SET_CONTROLLER,
+		})
+	}
+
+	// get session
+	session, err := userService.GetSession(session.Uuid)
+	if err != nil {
+		log.Println("set session as controller error:", err)
+		return c.JSON(http.StatusBadRequest, pifyHttp.ApiResponse{
+			ErrorCode: errors.GET_SESSION_FAILED,
+		})
+	}
+
+	return c.JSON(http.StatusOK, pifyHttp.ConnectResponse{
+		LoginResponse: pifyHttp.LoginResponse{
+			LoggedIn: true,
+			User: &pifyHttp.UserDetails{
+				DisplayName:     session.User.DisplayName,
+				ProfileImageUrl: session.User.ProfileImageUrl,
+				IsController:    session.IsController,
+			},
+		},
+		Connected: true,
+	})
+}
+
 func getTrack(c echo.Context) error {
 	trackId := c.Param("id")
 	spotifyService := c.Get("spotifyService").(*services.SpotifyService)
-	session, err := playerService.Connect()
+	session, err := playerService.GetControllerSession()
 	if err != nil {
 		log.Println("playerService connect error:", err)
 		return err
@@ -119,7 +155,7 @@ func getTrack(c echo.Context) error {
 
 func getAndSaveYoutubeVideo(c echo.Context) error {
 	spotifyService := c.Get("spotifyService").(*services.SpotifyService)
-	session, err := playerService.Connect()
+	session, err := playerService.GetControllerSession()
 	if err != nil {
 		log.Println("playerService connect error:", err)
 		return err

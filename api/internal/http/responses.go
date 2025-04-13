@@ -13,6 +13,11 @@ type LoginResponse struct {
 	ErrorCode   string       `json:"error_code"`
 }
 
+type ConnectResponse struct {
+	LoginResponse
+	Connected bool `json:"connected"`
+}
+
 type YoutubeVideoResponse struct {
 	VideoId string `json:"video_id"`
 }

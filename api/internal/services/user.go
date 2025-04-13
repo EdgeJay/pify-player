@@ -181,6 +181,21 @@ func (s *UserService) UpdateSessionAccessToken(
 	return s.GetSession(sessionId)
 }
 
+func (s *UserService) SetSessionAsController(sessionId string) (*models.UserSession, error) {
+	_, err := s.db.Bun.NewUpdate().
+		Model((*models.UserSession)(nil)).
+		Set("is_controller = 1").
+		Where("uuid = ?", sessionId).
+		Exec(context.Background())
+
+	if err != nil {
+		return nil, err
+	}
+
+	// fetch session
+	return s.GetSession(sessionId)
+}
+
 func (s *UserService) DeleteSession(sessionId string) error {
 	_, err := s.db.Bun.NewDelete().
 		Model((*models.UserSession)(nil)).
