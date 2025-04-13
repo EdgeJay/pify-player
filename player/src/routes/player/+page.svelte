@@ -1,15 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import type { youtube_v3 } from 'googleapis';
 	import { getSpotifyTokenFromStorage } from '$lib/session';
 	import { controlPlayback } from '$lib/device';
 	import { refreshAccessToken } from '$lib/session';
 	import { getAndSaveYoutubeVideo } from '$lib/playback';
+	import PlayerPanel from './components/player-panel.svelte';
 	import LoginDialog from './components/login.svelte';
 
 	const defaultVolume = 50;
-
-	type YoutubeSearchListResponse = youtube_v3.Schema$SearchListResponse;
 
 	let { data } = $props();
 	let deviceId = $state('');
@@ -26,7 +24,6 @@
 	let songProgress = $state(0);
 	// volume controls
 	let volume = $state(defaultVolume);
-	let isTogglingVolume = $state(false);
 
 	// error message shown to user
 	let errorMessage = $state('');
@@ -34,7 +31,7 @@
 	// login dialog
 	let isConnected = $state(true);
 
-	let player: Spotify.Player;
+	let player: Spotify.Player | undefined = $state();
 
 	let token = '';
 
@@ -75,6 +72,7 @@
 				},
 				volume: volume / 100
 			});
+
 			/* Activates an HTML element in the player instance. This is typically required before any media playback
 				can occur, especially in browsers that enforce user interaction before allowing audio/video playback. */
 			player.activateElement();
@@ -86,7 +84,7 @@
 				deviceId = device_id;
 
 				// check playback state, take over as playback controls if state is null
-				const state = await player.getCurrentState();
+				const state = await player!.getCurrentState();
 				if (!state) {
 					const success = await controlPlayback(token, deviceId);
 					if (success) {
@@ -97,7 +95,6 @@
 
 			// Player Not Ready
 			player.addListener('not_ready', ({ device_id }) => {
-				console.log('Device ID has gone offline', device_id);
 				errorMessage = `Device ID has gone offline: ${device_id}`;
 			});
 
@@ -123,75 +120,79 @@
 			});
 
 			player.addListener('autoplay_failed', () => {
-				// console.log('Autoplay is not allowed by the browser autoplay rules');
 				errorMessage = 'Autoplay is not allowed by the browser autoplay rules';
 			});
 
 			let intervalId: NodeJS.Timeout | undefined;
 
-			player.addListener(
-				'player_state_changed',
-				async ({ paused, track_window: { current_track } }) => {
-					const stateChanged =
-						spotifyTrack?.id !== current_track?.id ||
-						(spotifyTrack?.id === current_track?.id && playbackPaused !== paused);
+			player.addListener('player_state_changed', async (playbackState) => {
+				if (!playbackState) {
+					return;
+				}
 
-					console.log('player_state_changed');
+				const {
+					paused,
+					track_window: { current_track }
+				} = playbackState;
+				const stateChanged =
+					spotifyTrack?.id !== current_track?.id ||
+					(spotifyTrack?.id === current_track?.id && playbackPaused !== paused);
 
-					spotifyTrack = current_track;
-					// console.log($state.snapshot(spotifyTrack));
+				console.log('player_state_changed');
 
-					// update song details
-					if (spotifyTrack?.album && spotifyTrack.album.images.length > 0) {
-						albumImage = spotifyTrack.album.images[0].url;
-					}
-					songTitle = spotifyTrack.name;
-					songArtists =
-						spotifyTrack?.artists?.reduce((acc, artist) => {
-							acc.push(artist.name);
-							return acc;
-						}, [] as string[]) || [];
+				spotifyTrack = current_track;
+				// console.log($state.snapshot(spotifyTrack));
 
-					playbackPaused = paused;
+				// update song details
+				if (spotifyTrack?.album && spotifyTrack.album.images.length > 0) {
+					albumImage = spotifyTrack.album.images[0].url;
+				}
+				songTitle = spotifyTrack?.name || '';
+				songArtists =
+					spotifyTrack?.artists?.reduce((acc, artist) => {
+						acc.push(artist.name);
+						return acc;
+					}, [] as string[]) || [];
 
-					await updatePlaybackPosition();
+				playbackPaused = paused;
 
-					if (intervalId) {
-						clearInterval(intervalId);
-					}
+				await updatePlaybackPosition();
 
-					if (!playbackPaused) {
-						// start timer to update playback position
-						intervalId = setInterval(async () => {
-							if (!playbackPaused) {
-								await updatePlaybackPosition();
-							}
-						}, 1000);
-					}
+				if (intervalId) {
+					clearInterval(intervalId);
+				}
 
-					if (stateChanged && data.enableYoutube) {
-						console.log('fetch youtube video');
-						// get additional track info and Youtube info
-						try {
-							// const track = await getTrack(data.basicAuthToken, spotifyTrack?.id || '');
-							// console.log(track);
-
-							const trackId = spotifyTrack?.id || '';
-							console.log('can fetch youtube video', songArtists.length > 0 && songTitle);
-							if (trackId) {
-								const res = await getAndSaveYoutubeVideo(
-									data.basicAuthToken,
-									`${spotifyTrack?.artists[0].name} ${spotifyTrack?.name}`,
-									trackId
-								);
-								ytVidId = res?.data?.video_id || '';
-							}
-						} catch (err) {
-							console.error('Error fetching track info:', err);
+				if (!playbackPaused) {
+					// start timer to update playback position
+					intervalId = setInterval(async () => {
+						if (!playbackPaused) {
+							await updatePlaybackPosition();
 						}
+					}, 1000);
+				}
+
+				if (stateChanged && data.enableYoutube) {
+					console.log('fetch youtube video');
+					// get additional track info and Youtube info
+					try {
+						// const track = await getTrack(data.basicAuthToken, spotifyTrack?.id || '');
+						// console.log(track);
+
+						const trackId = spotifyTrack?.id || '';
+						console.log('can fetch youtube video', songArtists.length > 0 && songTitle);
+						if (trackId) {
+							const res = await getAndSaveYoutubeVideo(
+								data.basicAuthToken,
+								`${spotifyTrack?.artists[0].name} ${spotifyTrack?.name}`,
+								trackId
+							);
+							ytVidId = res?.data?.video_id || '';
+						}
+					} catch (err) {
+						console.error('Error fetching track info:', err);
 					}
 				}
-			);
+			});
 
 			player.connect();
 		};
@@ -211,51 +212,12 @@
 
 	/* Playback controls */
 	const updatePlaybackPosition = async () => {
-		const state = await player.getCurrentState();
+		const state = await player?.getCurrentState();
 		if (state) {
 			position = convertToMinutes(state.position);
 			duration = convertToMinutes(state.duration);
 			songProgress = Math.ceil((state.position / state.duration) * 100);
 		}
-	};
-
-	const onPlay = () => {
-		player.togglePlay();
-	};
-
-	const onNext = () => {
-		player.nextTrack();
-	};
-
-	const onPrev = () => {
-		player.previousTrack();
-	};
-
-	const onSeek = async (evt: Event) => {
-		const state = await player.getCurrentState();
-		if (!state) {
-			return;
-		}
-		const target = evt.target as HTMLInputElement;
-		if (!target) {
-			return;
-		}
-		const value = parseInt(target.value);
-		player.seek(state.duration * (value / 100));
-	};
-
-	const toggleVolume = () => {
-		isTogglingVolume = !isTogglingVolume;
-	};
-
-	const onVolumeChange = async (evt: Event) => {
-		const target = evt.target as HTMLInputElement;
-		if (!target) {
-			return;
-		}
-		const value = parseInt(target.value);
-		volume = value;
-		player.setVolume(value / 100);
 	};
 </script>
 
@@ -274,69 +236,18 @@
 			></iframe>
 		{/if}
 	</div>
-	<div class="player">
-		<p>{errorMessage}</p>
-		<div class="panel">
-			<div class="album">
-				{#if albumImage}
-					<img src={albumImage} alt={songTitle} />
-				{/if}
-			</div>
-			<div class="song">
-				<h1>{songTitle}</h1>
-				<p>{songArtists.join(', ')}</p>
-			</div>
-			<div class="progress">
-				<span>{position}</span>
-				<input
-					type="range"
-					step="1"
-					style="--value:{songProgress};"
-					value={songProgress}
-					onchange={onSeek}
-				/>
-				<span>{duration}</span>
-			</div>
-			<div class="controls">
-				<button class="sm" aria-label="Volume" onclick={toggleVolume}>
-					<i class="fa fa-volume-high"></i>
-				</button>
-				{#if isTogglingVolume}
-					<div class="volume-panel">
-						<div class="progress no-margins full-width">
-							<input
-								type="range"
-								step="1"
-								style="--value:{volume};"
-								value={volume}
-								onchange={onVolumeChange}
-							/>
-							<span>{volume}</span>
-						</div>
-					</div>
-				{:else}
-					<button class="sm" aria-label="Shuffle">
-						<i class="fa fa-shuffle"></i>
-					</button>
-					<button aria-label="Previous" onclick={onPrev}>
-						<i class="fa fa-backward"></i>
-					</button>
-					<button class="play" onclick={onPlay} aria-label="Play">
-						<i class="fa {playbackPaused ? 'fa-play' : 'fa-pause'}"></i>
-					</button>
-					<button aria-label="Next" onclick={onNext}>
-						<i class="fa fa-forward"></i>
-					</button>
-					<button class="sm" aria-label="Repeat">
-						<i class="fa fa-repeat"></i>
-					</button>
-					<button class="sm" aria-label="Playlist">
-						<i class="fa fa-list"></i>
-					</button>
-				{/if}
-			</div>
-		</div>
-	</div>
+	<PlayerPanel
+		{player}
+		{errorMessage}
+		{playbackPaused}
+		{position}
+		{duration}
+		{albumImage}
+		{songTitle}
+		{songArtists}
+		{songProgress}
+		{volume}
+	/>
 	{#if !isConnected}
 		<LoginDialog basicAuthToken={data.basicAuthToken} />
 	{/if}
@@ -369,145 +280,5 @@
 		width: 100%;
 		height: 100%;
 		z-index: 1;
-	}
-
-	.player {
-		position: absolute;
-		display: flex;
-		flex-direction: column;
-		justify-content: flex-end;
-		align-items: center;
-		width: 100%;
-		height: 100%;
-		padding: 20px;
-		z-index: 20;
-	}
-
-	.panel {
-		position: relative;
-		background-color: #fff;
-		box-shadow: 0 30px 80px #656565;
-		border-radius: 15px;
-		padding: 20px 30px;
-		min-width: 600px;
-	}
-
-	.album {
-		position: absolute;
-		top: -20px;
-		left: 20px;
-		width: 100px;
-		height: 100px;
-		background-color: #585858;
-		border: 5px solid #fff;
-		border-radius: 10px;
-		z-index: 10;
-	}
-
-	.album img {
-		width: 100%;
-		height: 100%;
-	}
-
-	.song {
-		color: #585858;
-		height: 60px;
-		padding-left: 110px;
-		margin-bottom: 10px;
-	}
-
-	.volume-panel {
-		display: flex;
-		flex-direction: row;
-		flex: 1;
-		align-items: center;
-		height: 60px;
-	}
-
-	.progress {
-		display: flex;
-		flex-flow: row;
-		justify-content: space-between;
-		align-items: center;
-		height: 25px;
-		margin-bottom: 20px;
-	}
-
-	.progress.no-margins {
-		margin: 0;
-	}
-
-	.progress.full-width {
-		flex: 1;
-	}
-
-	.progress span {
-		color: #585858;
-		font-size: 14px;
-		text-align: center;
-	}
-
-	.progress input[type='range'] {
-		--min: 0;
-		--max: 100;
-		--range: calc(var(--max) - var(--min));
-		--ratio: calc((var(--value) - var(--min)) / var(--range));
-		--sx: calc(0.5 * 7px + var(--ratio) * (100% - 7px));
-	}
-
-	.progress input[type='range'] {
-		appearance: none;
-		-webkit-appearance: none;
-		width: 100%;
-		height: 7px;
-		background: #9a9a9a;
-		border-radius: 4px;
-		margin: 0 15px;
-	}
-
-	.progress input[type='range']::-webkit-slider-thumb {
-		margin-top: -4px;
-		appearance: none;
-		-webkit-appearance: none;
-		background: #585858;
-		width: 16px;
-		aspect-ratio: 1/1;
-		border-radius: 50%;
-		outline: 2px solid #fff;
-		box-shadow: 0 6px 10px rgba(5, 36, 28, 0.3);
-	}
-
-	.progress input[type='range']::-webkit-slider-runnable-track {
-		height: 7px;
-		border: none;
-		border-radius: 4px;
-		background:
-			linear-gradient(#585858, #585858) 0 / var(--sx) 100% no-repeat,
-			#9a9a9a;
-	}
-
-	.controls {
-		display: flex;
-		flex-direction: row;
-		justify-content: space-between;
-		align-items: center;
-	}
-
-	.controls button {
-		color: #585858;
-		font-size: 30px;
-	}
-
-	.controls button.play {
-		background-color: #585858;
-		color: #fff;
-		box-shadow: 0 10px 20px #656565;
-		width: 60px;
-		height: 60px;
-		border-radius: 30px;
-	}
-
-	.controls button.sm {
-		font-size: 18px;
 	}
 </style>
