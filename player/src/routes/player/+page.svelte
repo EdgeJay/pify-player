@@ -7,6 +7,7 @@
 	import PlayerPanel from './components/player-panel.svelte';
 	import YoutubeBackground from './components/youtube-bg.svelte';
 	import LoginDialog from './components/login.svelte';
+	import SettingsDialog from './components/settings.svelte';
 
 	const defaultVolume = 50;
 
@@ -31,6 +32,9 @@
 
 	// login dialog
 	let isConnected = $state(true);
+
+	// settings dialog
+	let showSettings = $state(false);
 
 	let player: Spotify.Player | undefined = $state();
 
@@ -220,6 +224,10 @@
 			songProgress = Math.ceil((state.position / state.duration) * 100);
 		}
 	};
+
+	const onToggleSettings = () => {
+		showSettings = !showSettings;
+	};
 </script>
 
 <div class="player-page">
@@ -238,9 +246,13 @@
 		{songArtists}
 		{songProgress}
 		{volume}
+		{onToggleSettings}
 	/>
 	{#if !isConnected}
 		<LoginDialog basicAuthToken={data.basicAuthToken} />
+	{/if}
+	{#if showSettings}
+		<SettingsDialog onClose={onToggleSettings} />
 	{/if}
 </div>
 

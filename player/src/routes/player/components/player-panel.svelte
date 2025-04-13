@@ -10,6 +10,7 @@
 		songArtists?: string[];
 		songProgress?: number;
 		volume: number;
+		onToggleSettings?: () => void;
 	}
 
 	let {
@@ -22,7 +23,8 @@
 		songTitle = '',
 		songArtists = [],
 		songProgress = 0,
-		volume
+		volume,
+		onToggleSettings
 	}: Props = $props();
 
 	// volume controls
@@ -77,8 +79,15 @@
 			{/if}
 		</div>
 		<div class="song">
-			<h1>{songTitle}</h1>
-			<p>{songArtists.join(', ')}</p>
+			<div class="song-info">
+				<h1>{songTitle}</h1>
+				<p>{songArtists.join(', ')}</p>
+			</div>
+			<div class="settings">
+				<button onclick={onToggleSettings} aria-label="Settings">
+					<i class="fa fa-cog"></i>
+				</button>
+			</div>
 		</div>
 		<div class="progress">
 			<span>{position}</span>
@@ -172,10 +181,18 @@
 	}
 
 	.song {
+		display: flex;
+		flex-direction: row;
 		color: #585858;
 		height: 60px;
 		padding-left: 110px;
 		margin-bottom: 10px;
+	}
+
+	.song-info {
+		display: flex;
+		flex-grow: 1;
+		flex-direction: column;
 	}
 
 	.volume-panel {
