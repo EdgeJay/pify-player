@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { checkSession } from '$lib/session';
+	import { checkSession, connectSessionAsController } from '$lib/session';
 	import { getAllDevices } from '$lib/device';
 	import type { Device } from '$lib/device';
 
 	let { data } = $props();
 	let loggedIn = $state(false);
+	let isController = $state(true);
 	let displayName = $state('');
 	let devices = $state<Device[]>([]);
 
@@ -14,6 +15,7 @@
 		try {
 			const { logged_in, redirect_url, user } = await checkSession();
 			loggedIn = logged_in;
+			isController = user.is_controller;
 
 			if (!logged_in) {
 				window.location.href = redirect_url;
@@ -29,6 +31,15 @@
 			console.error(err);
 		}
 	});
+
+	const onConnect = async () => {
+		try {
+			const { connected } = await connectSessionAsController();
+			isController = connected;
+		} catch (err) {
+			console.error(err);
+		}
+	};
 
 	const onRefreshButton = async () => {
 		// get all devices
@@ -58,6 +69,13 @@
 				<p>No devices found</p>
 			{/if}
 
+			{#if !isController}
+				<p>You are not controlling the player now.</p>
+				<button onclick={onConnect}>Connect</button>
+			{:else}
+				<p>You are controlling the player now.</p>
+			{/if}
+
 			<button onclick={onRefreshButton} style="margin-top:50px;">Refresh</button>
 			<button onclick={onLogoutButton} style="margin-top:15px;">Logout</button>
 		</section>
@@ -68,7 +86,7 @@
 	.home {
 		display: flex;
 		flex-direction: column;
-		justify-content: flex-start;
+		justify-content: center;
 		align-items: center;
 		height: 100%;
 		padding-bottom: 50px;
@@ -76,13 +94,12 @@
 
 	.home-container {
 		flex: 0;
-		background-color: #1a1a1a;
-		border: 2px solid #00ff00;
-		border-radius: 10px;
-		padding: 20px;
-		margin-top: 100px;
+		background-color: #fff;
+		color: #585858;
+		box-shadow: 0 30px 80px #656565;
+		border-radius: 15px;
+		padding: 20px 30px;
 		width: 90%;
-		box-shadow: 0 0 20px #00ff00;
 	}
 
 	@media screen and (min-width: 800px) {

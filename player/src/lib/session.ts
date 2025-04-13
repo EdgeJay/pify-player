@@ -7,7 +7,12 @@ export interface LoginResponse {
 	user: {
 		display_name: string;
 		profile_image_url: string;
+		is_controller: boolean;
 	};
+}
+
+export interface ConnectResponse extends LoginResponse {
+	connected: boolean;
 }
 
 interface PlayerConnectResponse {
@@ -39,6 +44,21 @@ export const checkSession = async (): Promise<LoginResponse> => {
 	}
 
 	const res = (await response.json()) as LoginResponse;
+	return res;
+};
+
+export const connectSessionAsController = async (): Promise<ConnectResponse> => {
+	const DOMAIN = window.location.hostname;
+	const response = await fetch(`https://${DOMAIN}:8080/api/player/connect`, {
+		method: 'POST',
+		credentials: 'include'
+	});
+
+	if (!response.ok) {
+		throw new Error('Connect failed');
+	}
+
+	const res = (await response.json()) as ConnectResponse;
 	return res;
 };
 
