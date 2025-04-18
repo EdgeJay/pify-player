@@ -25,6 +25,11 @@ fi
 
 5. Make sure Raspberry Pi device boots to console (change via Raspberry Pi Configuration or `sudo raspi-config`)
 
+## (Re)building of apps
+
+1. If there are code changes to either `api` or `player`, `make build` command must be executed.
+2. Additionally, if there are changes to `api/cmd/host_handler/main.go` and/or its dependencies, `make install-host-handler` command must be executed.
+
 ## Additional changes
 
 ### Keep bluetooth always on and discoverable
