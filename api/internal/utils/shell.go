@@ -12,7 +12,7 @@ func TriggerSystemShutdown() error {
 		return nil
 	}
 
-	cmd := exec.Command("sh", "-c", "sleep 3 && /app/scripts/shutdown.sh")
+	cmd := exec.Command("sleep 3 && /app/scripts/shutdown.sh")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
@@ -32,7 +32,7 @@ func TriggerSystemRestart() error {
 		return nil
 	}
 
-	cmd := exec.Command("sh", "-c", "sleep 3 && /app/scripts/restart.sh")
+	cmd := exec.Command("sleep 3 && /app/scripts/restart.sh")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
