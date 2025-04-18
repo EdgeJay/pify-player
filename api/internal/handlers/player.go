@@ -30,6 +30,7 @@ func SetPlayerRoutes(group *echo.Group) {
 	group.GET("/track/:id", getTrack, middlewareFactory.GetSpotifyService(), middlewareFactory.BasicAuth())
 	group.POST("/youtube", getAndSaveYoutubeVideo, middlewareFactory.GetSpotifyService(), middlewareFactory.BasicAuth())
 	group.GET("/login-qr", getLoginQR, middlewareFactory.BasicAuth())
+	group.POST("/command", postCommand, middlewareFactory.BasicAuth())
 }
 
 func getConnectStatus(c echo.Context) error {
@@ -252,4 +253,35 @@ func getLoginQR(c echo.Context) error {
 			"qr": dataURL,
 		},
 	})
+}
+
+func postCommand(c echo.Context) error {
+	var cmdReq pifyHttp.PlayerCommandRequest
+	if err := c.Bind(&cmdReq); err != nil {
+		return c.JSON(http.StatusBadRequest, pifyHttp.ApiResponse{
+			ErrorCode: errors.INVALID_REQUEST_BODY,
+		})
+	}
+
+	var err error
+
+	switch cmdReq.Command {
+	case "shutdown":
+		err = utils.TriggerSystemShutdown()
+	case "restart":
+		err = utils.TriggerSystemRestart()
+	default:
+		return c.JSON(http.StatusBadRequest, pifyHttp.ApiResponse{
+			ErrorCode: errors.INVALID_PLAYER_COMMAND,
+		})
+	}
+
+	if err != nil {
+		log.Println("Error executing command:", err)
+		return c.JSON(http.StatusInternalServerError, pifyHttp.ApiResponse{
+			ErrorCode: errors.COMMAND_EXECUTION_FAILED,
+		})
+	}
+
+	return c.JSON(http.StatusNoContent, nil)
 }

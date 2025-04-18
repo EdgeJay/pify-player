@@ -252,7 +252,7 @@
 		<LoginDialog basicAuthToken={data.basicAuthToken} />
 	{/if}
 	{#if showSettings}
-		<SettingsDialog onClose={onToggleSettings} />
+		<SettingsDialog onClose={onToggleSettings} basicAuthToken={data.basicAuthToken} />
 	{/if}
 </div>
 

@@ -2,23 +2,42 @@
 	import { onMount } from 'svelte';
 
 	interface Props {
+		basicAuthToken: string;
 		onClose: () => void;
 	}
 
-	let { onClose }: Props = $props();
+	let { onClose, basicAuthToken }: Props = $props();
 
 	onMount(async () => {});
 
 	const onShutdown = async () => {
-		// Shutdown logic here
 		console.log('System shutting down');
-		onClose();
+		const DOMAIN = window.location.hostname;
+		await fetch(`https://${DOMAIN}:8080/api/player/command`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Basic ${basicAuthToken}`
+			},
+			body: JSON.stringify({
+				command: 'shutdown'
+			})
+		});
 	};
 
 	const onRestart = async () => {
-		// Shutdown logic here
-		console.log('System shutting down');
-		onClose();
+		console.log('System restarting');
+		const DOMAIN = window.location.hostname;
+		await fetch(`https://${DOMAIN}:8080/api/player/command`, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				Authorization: `Basic ${basicAuthToken}`
+			},
+			body: JSON.stringify({
+				command: 'restart'
+			})
+		});
 	};
 
 	const onRefreshWindow = () => {

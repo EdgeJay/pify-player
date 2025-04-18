@@ -25,4 +25,6 @@ const (
 	PARSE_TRACK_RESPONSE_FAILED = "parse_track_response_failed"
 	NO_YOUTUBE_VIDEO_FOUND      = "no_youtube_video_found"
 	UNABLE_TO_SET_CONTROLLER    = "unable_to_set_controller"
+	INVALID_PLAYER_COMMAND      = "invalid_player_command"
+	COMMAND_EXECUTION_FAILED    = "command_execution_failed"
 )
