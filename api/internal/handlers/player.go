@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"time"
@@ -263,13 +264,14 @@ func postCommand(c echo.Context) error {
 		})
 	}
 
+	var res *http.Response
 	var err error
 
 	switch cmdReq.Command {
 	case "shutdown":
-		http.Post("http://host.docker.internal:8081/shutdown", "application/json", nil)
+		res, err = http.Post("http://host.docker.internal:8081/shutdown", "application/json", nil)
 	case "restart":
-		http.Post("http://host.docker.internal:8081/reboot", "application/json", nil)
+		res, err = http.Post("http://host.docker.internal:8081/reboot", "application/json", nil)
 	default:
 		return c.JSON(http.StatusBadRequest, pifyHttp.ApiResponse{
 			ErrorCode: errors.INVALID_PLAYER_COMMAND,
@@ -282,6 +284,13 @@ func postCommand(c echo.Context) error {
 			ErrorCode: errors.COMMAND_EXECUTION_FAILED,
 		})
 	}
+
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Println("Error reading host handler response body:", err)
+	}
+	log.Println("Host handler response:", string(body))
 
 	return c.JSON(http.StatusNoContent, nil)
 }
