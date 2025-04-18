@@ -8,7 +8,7 @@ cd /home/workbench-rpi-admin/repos/pify-player && make start
 
 # host_handler is custom app built using "make install-host-handler"
 # Refer to Makefile for more details
-host_handler > /home/workbench-rpi-admin/repos/pify-player/scripts/host_handler.log 2>&1
+nohup host_handler > /home/workbench-rpi-admin/repos/pify-player/scripts/host_handler.log 2>&1 &
 
 until [ "`docker inspect -f {{.State.Running}} pify-player-api`"=="true" ]; do
     sleep 0.5;
