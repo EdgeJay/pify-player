@@ -47,6 +47,8 @@ services:
       - ./api/database:/app/database
     env_file:
       - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - pify-player-network
 
