@@ -15,13 +15,13 @@
 		try {
 			const { logged_in, redirect_url, user } = await checkSession();
 			loggedIn = logged_in;
-			isController = user.is_controller;
+			isController = user?.is_controller || false;
 
 			if (!logged_in) {
 				window.location.href = redirect_url;
 			} else {
 				console.log('Already logged in');
-				displayName = user.display_name;
+				displayName = user?.display_name || '';
 
 				// get all devices
 				devices = (await getAllDevices()).data.devices;

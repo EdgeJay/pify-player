@@ -8,7 +8,7 @@ export interface LoginResponse {
 		display_name: string;
 		profile_image_url: string;
 		is_controller: boolean;
-	};
+	} | null;
 }
 
 export interface ConnectResponse extends LoginResponse {
