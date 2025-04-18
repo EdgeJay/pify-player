@@ -43,8 +43,10 @@ services:
     container_name: pify-player-api
     ports:
       - "8080:443"
+    privileged: true
     volumes:
       - ./api/database:/app/database
+      - /sbin:/host_sbin:ro
     env_file:
       - .env
     networks:
