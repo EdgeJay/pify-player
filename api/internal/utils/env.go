@@ -38,3 +38,7 @@ func GetBasicAuthPassword() string {
 func GetYoutubeApiKey() string {
 	return os.Getenv("YOUTUBE_API_KEY")
 }
+
+func ShellCommandsAllowed() bool {
+	return os.Getenv("ALLOW_SHELL_COMMANDS") == "1"
+}
