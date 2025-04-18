@@ -47,6 +47,7 @@ services:
     volumes:
       - ./api/database:/app/database
       - /usr/sbin:/host_sbin:ro
+      - /bin:/host_bin:ro
     env_file:
       - .env
     networks:
