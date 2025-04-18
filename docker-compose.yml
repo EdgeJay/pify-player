@@ -46,8 +46,9 @@ services:
     privileged: true
     volumes:
       - ./api/database:/app/database
-      - ./scripts/shutdown.sh:/app/scripts/shutdown.sh
-      - ./scripts/restart.sh:/app/scripts/restart.sh
+      - /usr/bin/systemctl:/host_bin/systemctl:ro
+      # - ./scripts/shutdown.sh:/app/scripts/shutdown.sh
+      # - ./scripts/restart.sh:/app/scripts/restart.sh
     env_file:
       - .env
     networks:
