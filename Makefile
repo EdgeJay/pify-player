@@ -7,6 +7,12 @@ generate-ssl:
 copy-certs:
 	@cp -r ./certs/ ./api/certs && cp -r ./certs/ ./player/certs
 
+install-host-handler:
+	@cd ./api && \
+	CGO_ENABLED=0 GOOS=linux go build -o "${GOPATH}/bin/host_handler" ./cmd/host_handler/main.go && \
+	chmod +x "${GOPATH}/bin/host_handler"
+	which host_handler
+
 build: copy-certs
 	@docker compose -f docker-compose.yml build
 

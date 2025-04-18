@@ -267,9 +267,9 @@ func postCommand(c echo.Context) error {
 
 	switch cmdReq.Command {
 	case "shutdown":
-		// err = utils.TriggerSystemShutdown()
+		http.Post("http://host.docker.internal:8081/shutdown", "application/json", nil)
 	case "restart":
-		// err = utils.TriggerSystemRestart()
+		http.Post("http://host.docker.internal:8081/reboot", "application/json", nil)
 	default:
 		return c.JSON(http.StatusBadRequest, pifyHttp.ApiResponse{
 			ErrorCode: errors.INVALID_PLAYER_COMMAND,
