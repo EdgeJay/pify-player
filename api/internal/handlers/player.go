@@ -267,9 +267,9 @@ func postCommand(c echo.Context) error {
 
 	switch cmdReq.Command {
 	case "shutdown":
-		err = utils.TriggerSystemShutdown()
+		// err = utils.TriggerSystemShutdown()
 	case "restart":
-		err = utils.TriggerSystemRestart()
+		// err = utils.TriggerSystemRestart()
 	default:
 		return c.JSON(http.StatusBadRequest, pifyHttp.ApiResponse{
 			ErrorCode: errors.INVALID_PLAYER_COMMAND,
