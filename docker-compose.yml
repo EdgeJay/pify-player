@@ -43,8 +43,11 @@ services:
     container_name: pify-player-api
     ports:
       - "8080:443"
+    privileged: true
     volumes:
       - ./api/database:/app/database
+      - ./scripts/shutdown.sh:/app/scripts/shutdown.sh:ro
+      - ./scripts/restart.sh:/app/scripts/restart.sh:ro
     env_file:
       - .env
     networks:
